@@ -8,7 +8,7 @@ from rich.live import Live
 
 
 # ETC IMPORTS
-import socket, time
+import socket, time, asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -25,15 +25,112 @@ console = Variables.console
 
 
 
+
+class Async_Port_Scanner():
+    """Async port scanner - much faster than threaded version"""
+
+    total       = 0
+    total_ports = 0
+    ip_port_map = {}
+    semaphore   = None
+
+
+    @classmethod
+    async def _scan_port(cls, ip, port, timeout):
+        """Async port scan for single port"""
+
+        try:
+            conn = asyncio.open_connection(ip, port)
+            await asyncio.wait_for(conn, timeout=timeout)
+
+            with Variables.LOCK:
+                console.print(f"[bold green][+] Active:[/bold green][yellow] {ip}:[/yellow]{port}")
+
+                if ip not in cls.ip_port_map: cls.ip_port_map[ip] = {"ports": []}
+
+                cls.ip_port_map[ip]["ports"].append(port)
+                cls.total_ports += 1
+
+            return True
+
+        except:
+            return False
+
+
+    @classmethod
+    async def _scan_ip(cls, ip, ports, timeout, max_concurrent):
+        """Scan all ports for one IP"""
+
+        cls.semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def scan_with_sem(port):
+            async with cls.semaphore:
+                return await cls._scan_port(ip, port, timeout)
+
+        tasks = [scan_with_sem(port) for port in ports]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+    @classmethod
+    async def _scan_all(cls, ips, ports, timeout, max_concurrent):
+        """Scan all IPs"""
+
+        c5 = "yellow"
+
+        for ip in ips:
+            cls.total += 1
+            console.print(f"[bold green][+] Scanning:[yellow] {ip}")
+
+            await cls._scan_ip(ip, ports, timeout, max_concurrent)
+
+            with Variables.LOCK:
+                Variables.panel_text = (f"[{c5}]IPs Scanned:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
+
+
+    @classmethod
+    def main(cls):
+        """Main entry point"""
+
+        ips         = Variables.ips
+        timeout     = Variables.timeout
+        max_threads = Variables.max_threads
+
+        ips = File_Saver.ips_sanitizer(ips=ips, verbose=True)
+        ports = range(0, 65536)
+        time_total = time.time()
+
+        p = "=" * 10
+        console.print(f"[bold red]\n{p}  Async Port Scanning  {p}\n")
+
+        asyncio.run(cls._scan_all(ips, ports, timeout, max_threads))
+
+        File_Saver.push_scan_results(data=cls.ip_port_map, f_type="json")
+
+        time_total = time.time() - time_total
+
+        c1 = "red"; c2 = "bold green"; c3 = "bold blue"; c4 = "bold yellow"
+
+        stats = (
+            f"[{c3}] [+] Total IPs Scanned:[{c4}] {len(ips)}"
+            f"\n[{c3}] [+] Total Ports Found:[{c4}] {cls.total_ports}"
+            f"\n[{c3}] [+] Elapsed Time:[{c4}] {time_total}"
+        )
+
+        console.print(
+            f"[{c1}]=========   Results   =========\n",
+            stats,
+            f"\n[{c1}]=================================",
+        )
+
+
+
+
 class Socket_Port_Scanner():
     """This class will be used to peform a full blown port scan off all 65,535 ports"""
 
     total       = 0
     total_ports = 0
     ip_port_map = {}
-
-
-
 
 
     @classmethod
@@ -93,12 +190,13 @@ class Socket_Port_Scanner():
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
             for ip in ips:
                 cls.total += 1
-                console.print(f"[bold green][+] Queuing:[yellow] {ip}")
-                for port in range(0, 65536):
-                    executor.submit(cls._port_scanner, ip, port, timeout)
+                console.print(f"[bold green][+] Scanning:[yellow] {ip}")
+
+                # Submit all ports for this IP and wait for completion before next IP
+                futures = [executor.submit(cls._port_scanner, ip, port, timeout) for port in range(0, 65536)]
 
                 with Variables.LOCK:
-                    Variables.panel_text = (f"[{c5}]IPs Queued:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
+                    Variables.panel_text = (f"[{c5}]IPs Scanning:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
 
 
     
