@@ -107,7 +107,7 @@ class Socket_Port_Scanner():
         for ip in ips:
             if not ip: continue
 
-            while cls.active >= 10:
+            while cls.active >= 1:
                 pass
 
             cls.total_ips_scanned += 1
