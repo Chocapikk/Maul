@@ -29,6 +29,7 @@ class Socket_Port_Scanner():
     
 
     total_ips_scanned = 0
+    total_ips_all     = 0
     total_ports_all   = 0
     total_ports_open  = 0
     ports_scanned     = 0
@@ -44,7 +45,7 @@ class Socket_Port_Scanner():
 
         if cls.ports_scanned % 100 == 0:
             with Variables.LOCK:
-                Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total_ips_scanned}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports_open}")
+                Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total_ips_scanned}/{cls.total_ips_all}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports_open}")
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -103,6 +104,7 @@ class Socket_Port_Scanner():
 
 
         for ip in ips:
+            if not ip: continue
             cls.total_ips_scanned += 1
             console.print(f"[bold green][+] Scanning:[yellow] {ip}")
             cls._threader_ports(ip=ip, timeout=timeout)
@@ -120,6 +122,7 @@ class Socket_Port_Scanner():
 
 
         ips = File_Saver.ips_sanitizer(ips=ips, verbose=True)
+        cls.total_ips_all = len(ips)
         time_total = time.time()
 
 
