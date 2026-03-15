@@ -76,21 +76,22 @@ class Socket_Port_Scanner():
     def _threader_ports(cls, ip, timeout):
         """This will spawn a raw thread for each port // concurrent futures is ass lol """
 
-
-        threads = []
+        
+        with Variables.LOCK:
+            threads = []; cls.active += 1
 
         for port in range(0,65356):
 
 
-            t = threading.Thread(target=cls._port_scanner, args=(ip, port, timeout), daemon=True); t.start()
+            t = threading.Thread(target=cls._port_scanner, args=(ip, port, timeout), daemon=True)
             threads.append(t)
         
+        for t in threads: t.start()
 
-        for t in threads:
-            t.join()
+        for t in threads: t.join()
         
         console.print(f"[bold red][+] Nutted:[yellow] {ip}")
-
+        with Variables.LOCK: cls.active -= 1
 
 
 
@@ -101,15 +102,18 @@ class Socket_Port_Scanner():
     def _threader_ips(cls, ips, max_threads, timeout=1):
         """This will spawn threads for ips // maybe idk yet"""
 
-
+        cls.active = 0
 
         for ip in ips:
             if not ip: continue
+
+            #while cls.active >= 1:
+            #    pass
+
+            console.print(f"\n[bold green][+] Scanning:[yellow] {ip}")
             cls.total_ips_scanned += 1
-            # cls._threader_ports(ip=ip, timeout=timeout)
-            threading.Thread(target=cls._threader_ports, args=(ip, timeout), daemon=True).start()
-            console.print(f"]\n[bold green][+] Scanning:[yellow] {ip}")
-            time.sleep(3)
+            cls._threader_ports(ip=ip, timeout=timeout)
+            #threading.Thread(target=cls._threader_ports, args=(ip, timeout), daemon=True).start()
 
 
     
