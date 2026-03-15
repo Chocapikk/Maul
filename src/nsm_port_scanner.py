@@ -8,7 +8,7 @@ from rich.live import Live
 
 
 # ETC IMPORTS
-import socket, time, asyncio
+import socket, time, asyncio, threading
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -186,22 +186,27 @@ class Socket_Port_Scanner():
 
     @classmethod
     def _threader_all(cls, ips, max_threads, timeout=1):
-        """Single thread pool for all IP:port combinations"""
+        """Raw threading - spawn threads with semaphore limit"""
 
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
-        c6 = "bold red"
+        semaphore = threading.Semaphore(max_threads)
 
-        with ThreadPoolExecutor(max_workers=max_threads) as executor:
-            for ip in ips:
-                cls.total += 1
-                console.print(f"[bold green][+] Queuing:[yellow] {ip}")
+        def scan_with_sem(ip, port):
+            with semaphore:
+                cls._port_scanner(ip, port, timeout)
 
-                # Submit all ports for all IPs to the pool
-                for port in range(0, 65536):
-                    executor.submit(cls._port_scanner, ip, port, timeout)
+        threads = []
+        for ip in ips:
+            cls.total += 1
+            console.print(f"[bold green][+] Scanning:[yellow] {ip}")
+
+            for port in range(0, 65536):
+                t = threading.Thread(target=scan_with_sem, args=(ip, port), daemon=True)
+                t.start()
+                threads.append(t)
+
+        # Wait for all threads to complete
+        for t in threads:
+            t.join()
 
 
     
