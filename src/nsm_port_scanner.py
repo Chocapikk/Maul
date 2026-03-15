@@ -42,6 +42,11 @@ class Async_Port_Scanner():
 
         cls.ports_scanned += 1
 
+        # Update panel every 100 ports scanned
+        if cls.ports_scanned % 100 == 0:
+            with Variables.LOCK:
+                Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
+
         try:
             reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, port), timeout=timeout)
             writer.close()
@@ -137,49 +142,42 @@ class Async_Port_Scanner():
 class Socket_Port_Scanner():
     """This class will be used to peform a full blown port scan off all 65,535 ports"""
 
-    total       = 0
-    total_ports = 0
-    ip_port_map = {}
+    total          = 0
+    total_ports    = 0
+    ports_scanned  = 0
+    ip_port_map    = {}
 
 
     @classmethod
     def _port_scanner(cls, ip, port, timeout, verbose=False):
         """This will peform port scan on said ip"""
 
-        
+        cls.ports_scanned += 1
 
-        # COLORS
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
-        c6 = "bold red"
-
+        # Update panel every 100 scans
+        if cls.ports_scanned % 100 == 0:
+            with Variables.LOCK:
+                Variables.panel_text = (f"[yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
 
         try:
-                
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(timeout)
+                result = s.connect_ex((ip, port))
 
-                    s.settimeout(timeout)
-                    result = s.connect_ex((ip,port))
-                    both = (f"{ip}:{port}")
+                if result == 0:
+                    with Variables.LOCK:
+                        console.print(f"[bold green][+] Active:[/bold green][yellow] {ip}:[/yellow]{port}")
 
-                    if result == 0:
-                        
+                        if ip not in cls.ip_port_map: cls.ip_port_map[ip] = {"ports": []}
 
-                        with Variables.LOCK:
-                            console.print(f"[bold green][+] Active:[/bold green][yellow] {ip}:[/yellow]{port}")
-                            
-                            if ip not in cls.ip_port_map: cls.ip_port_map[ip] = {"ports": []}
+                        cls.ip_port_map[ip]["ports"].append(port)
+                        cls.total_ports += 1
 
-                            cls.ip_port_map[ip]["ports"].append(port); cls.total_ports += 1
-                            return True
-                    
+                    return True
 
-                    if verbose: console.print(f"[bold red][-] {both}")
-                    return False
+                return False
 
-        except Exception as e: 
+        except Exception as e:
             if verbose: console.print(f"[bold red]Exception Error:[bold yellow] {e}")
             return False
 
