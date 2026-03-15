@@ -63,32 +63,37 @@ class Async_Port_Scanner():
 
     @classmethod
     async def _scan_ip(cls, ip, ports, timeout, max_concurrent):
-        """Scan all ports for one IP"""
+        """Scan all ports for one IP in batches"""
 
-        cls.semaphore = asyncio.Semaphore(max_concurrent)
+        # Process in chunks to avoid memory issues but keep speed
+        chunk_size = 10000
 
-        async def scan_with_sem(port):
-            async with cls.semaphore:
-                return await cls._scan_port(ip, port, timeout)
+        for i in range(0, len(ports), chunk_size):
+            chunk = ports[i:i + chunk_size]
+            cls.semaphore = asyncio.Semaphore(max_concurrent)
 
-        tasks = [scan_with_sem(port) for port in ports]
-        await asyncio.gather(*tasks, return_exceptions=True)
+            async def scan_with_sem(port):
+                async with cls.semaphore:
+                    return await cls._scan_port(ip, port, timeout)
+
+            tasks = [scan_with_sem(port) for port in chunk]
+            await asyncio.gather(*tasks, return_exceptions=True)
 
 
     @classmethod
     async def _scan_all(cls, ips, ports, timeout, max_concurrent):
-        """Scan all IPs"""
+        """Scan all IPs concurrently"""
 
         c5 = "yellow"
 
-        for ip in ips:
+        # Scan all IPs concurrently instead of one at a time
+        async def scan_single_ip(ip):
             cls.total += 1
             console.print(f"[bold green][+] Scanning:[yellow] {ip}")
-
             await cls._scan_ip(ip, ports, timeout, max_concurrent)
 
-            with Variables.LOCK:
-                Variables.panel_text = (f"[{c5}]Ports Scanned:[/{c5}] {cls.ports_scanned}  -  [{c5}]Open:[/{c5}] {cls.total_ports}")
+        tasks = [scan_single_ip(ip) for ip in ips]
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
     @classmethod
