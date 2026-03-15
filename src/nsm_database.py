@@ -15,7 +15,7 @@ from nsm_vars import Variables
 # ETC IMPORTS
 from pathlib import Path
 from datetime import datetime
-import sys
+import sys, json
 
 
 
@@ -63,7 +63,7 @@ class File_Saver():
 
 
     @classmethod
-    def push_scan_results(cls, data, reverse=False, verbose=False):
+    def push_scan_results(cls, data, f_type="txt", reverse=False, verbose=False):
         """This will push current set of ips"""
 
 
@@ -74,11 +74,17 @@ class File_Saver():
 
                 if reverse: pathway = cls.path_reverse
                 else: pathway = cls.path
+                
 
-                with open(pathway, "w") as file:
-                    
-                    ahh = '\n'.join(d for d in data)
-                    file.write(ahh)
+                if f_type == "txt":
+                    with open(f"{pathway}.txt", "w") as file:
+                        
+                        ahh = '\n'.join(d for d in data)
+                        file.write(ahh)
+                
+                elif f_type == "json":
+                    with open(f"{pathway}.json", "w") as file:
+                        json.dump(data, file, indent=4)
 
                 console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
                  
@@ -91,7 +97,7 @@ class File_Saver():
     
     
     @classmethod
-    def ips_sanitizer(cls, ips, verbose):
+    def ips_sanitizer(cls, ips, verbose=True):
         """This will sanitize and validate ips list"""
 
 
@@ -142,12 +148,12 @@ class File_Saver():
 
             elif Variables.url:  
 
-                cls.path = cls.path_dir / f"{Variables.url.replace(".", "_")}_{timestamp}.txt" 
-                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}.txt" 
+                cls.path = cls.path_dir / f"{Variables.url.replace(".", "_")}_{timestamp}" 
+                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}" 
 
             else:              
                 cls.path = cls.path_dir / f"{timestamp}.txt"
-                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}.txt"
+                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}"
 
             console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path}")
 
