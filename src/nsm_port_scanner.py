@@ -24,128 +24,15 @@ console = Variables.console
 
 
 
-
-
-class Async_Port_Scanner():
-    """Async port scanner - much faster than threaded version"""
-
-    total          = 0
-    total_ports    = 0
-    ports_scanned  = 0
-    ip_port_map    = {}
-    semaphore      = None
-
-
-    @classmethod
-    async def _scan_port(cls, ip, port, timeout):
-        """Async port scan for single port"""
-
-        cls.ports_scanned += 1
-
-        # Update panel every 100 ports scanned
-        if cls.ports_scanned % 100 == 0:
-            with Variables.LOCK:
-                Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
-
-        try:
-            reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, port), timeout=timeout)
-            writer.close()
-            await writer.wait_closed()
-
-            with Variables.LOCK:
-                console.print(f"[bold green][+] Active:[/bold green][yellow] {ip}:[/yellow]{port}")
-
-                if ip not in cls.ip_port_map: cls.ip_port_map[ip] = {"ports": []}
-
-                cls.ip_port_map[ip]["ports"].append(port)
-                cls.total_ports += 1
-
-            return True
-
-        except:
-            return False
-
-
-    @classmethod
-    async def _scan_ip(cls, ip, ports, timeout, max_concurrent):
-        """Scan all ports for one IP in batches"""
-
-        # Process in chunks to avoid memory issues but keep speed
-        chunk_size = 10000
-
-        for i in range(0, len(ports), chunk_size):
-            chunk = ports[i:i + chunk_size]
-            cls.semaphore = asyncio.Semaphore(max_concurrent)
-
-            async def scan_with_sem(port):
-                async with cls.semaphore:
-                    return await cls._scan_port(ip, port, timeout)
-
-            tasks = [scan_with_sem(port) for port in chunk]
-            await asyncio.gather(*tasks, return_exceptions=True)
-
-
-    @classmethod
-    async def _scan_all(cls, ips, ports, timeout, max_concurrent):
-        """Scan all IPs concurrently"""
-
-        c5 = "yellow"
-
-        # Scan all IPs concurrently instead of one at a time
-        async def scan_single_ip(ip):
-            cls.total += 1
-            console.print(f"[bold green][+] Scanning:[yellow] {ip}")
-            await cls._scan_ip(ip, ports, timeout, max_concurrent)
-
-        tasks = [scan_single_ip(ip) for ip in ips]
-        await asyncio.gather(*tasks, return_exceptions=True)
-
-
-    @classmethod
-    def main(cls):
-        """Main entry point"""
-
-        ips         = Variables.ips
-        timeout     = Variables.timeout
-        max_threads = Variables.max_threads
-
-        ips = File_Saver.ips_sanitizer(ips=ips, verbose=True)
-        ports = range(0, 65536)
-        time_total = time.time()
-
-        p = "=" * 10
-        console.print(f"[bold red]\n{p}  Async Port Scanning  {p}\n")
-
-        asyncio.run(cls._scan_all(ips, ports, timeout, max_threads))
-
-        File_Saver.push_scan_results(data=cls.ip_port_map, f_type="json")
-
-        time_total = time.time() - time_total
-
-        c1 = "red"; c2 = "bold green"; c3 = "bold blue"; c4 = "bold yellow"
-
-        stats = (
-            f"[{c3}] [+] Total IPs Scanned:[{c4}] {len(ips)}"
-            f"\n[{c3}] [+] Total Ports Found:[{c4}] {cls.total_ports}"
-            f"\n[{c3}] [+] Elapsed Time:[{c4}] {time_total}"
-        )
-
-        console.print(
-            f"[{c1}]=========   Results   =========\n",
-            stats,
-            f"\n[{c1}]=================================",
-        )
-
-
-
-
 class Socket_Port_Scanner():
     """This class will be used to peform a full blown port scan off all 65,535 ports"""
+    
 
-    total          = 0
-    total_ports    = 0
-    ports_scanned  = 0
-    ip_port_map    = {}
+    total_ips_scanned = 0
+    total_ports_all   = 0
+    total_ports_open  = 0
+    ports_scanned     = 0
+    ip_port_map       = {}
 
 
     @classmethod
@@ -157,7 +44,7 @@ class Socket_Port_Scanner():
 
         if cls.ports_scanned % 100 == 0:
             with Variables.LOCK:
-                Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
+                Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total_ips_scanned}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports_open}")
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -171,7 +58,7 @@ class Socket_Port_Scanner():
                         if ip not in cls.ip_port_map: cls.ip_port_map[ip] = {"ports": []}
 
                         cls.ip_port_map[ip]["ports"].append(port)
-                        cls.total_ports += 1
+                        cls.total_ports_open += 1
 
                     return True
 
@@ -180,33 +67,45 @@ class Socket_Port_Scanner():
         except Exception as e:
             if verbose: console.print(f"[bold red]Exception Error:[bold yellow] {e}")
             return False
+        
+    
+
+
+    @classmethod
+    def _threader_ports(cls, ip, timeout):
+        """This will spawn a raw thread for each port // concurrent futures is ass lol """
+
+        
+        threads = []
+
+        for port in range(0,65356):
+            
+            
+            t = threading.Thread(target=cls._port_scanner, args=(ip, port, timeout), daemon=True); t.start()
+            threads.append(t)
+        
+
+        for t in threads:
+            t.join()
+        
+        console.print(f"\n[bold red][+] Nutted:[yellow] {ip}")
+
+
+
 
 
 
 
     @classmethod
-    def _threader_all(cls, ips, max_threads, timeout=1):
-        """Raw threading - spawn threads with semaphore limit"""
+    def _threader_ips(cls, ips, max_threads, timeout=1):
+        """This will spawn threads for ips // maybe idk yet"""
 
-        semaphore = threading.Semaphore(max_threads)
 
-        def scan_with_sem(ip, port):
-            with semaphore:
-                cls._port_scanner(ip, port, timeout)
 
-        threads = []
         for ip in ips:
-            cls.total += 1
+            cls.total_ips_scanned += 1
             console.print(f"[bold green][+] Scanning:[yellow] {ip}")
-
-            for port in range(0, 65536):
-                t = threading.Thread(target=scan_with_sem, args=(ip, port), daemon=True)
-                t.start()
-                threads.append(t)
-
-        # Wait for all threads to complete
-        for t in threads:
-            t.join()
+            cls._threader_ports(ip=ip, timeout=timeout)
 
 
     
@@ -226,7 +125,7 @@ class Socket_Port_Scanner():
 
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Mass Port Scanning  {p}\n")
-        cls._threader_all(ips=ips, max_threads=max_threads, timeout=timeout)
+        cls._threader_ips(ips=ips, max_threads=max_threads, timeout=timeout)
         File_Saver.push_scan_results(data=cls.ip_port_map, f_type="json")
 
 
