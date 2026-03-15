@@ -29,19 +29,23 @@ console = Variables.console
 class Async_Port_Scanner():
     """Async port scanner - much faster than threaded version"""
 
-    total       = 0
-    total_ports = 0
-    ip_port_map = {}
-    semaphore   = None
+    total          = 0
+    total_ports    = 0
+    ports_scanned  = 0
+    ip_port_map    = {}
+    semaphore      = None
 
 
     @classmethod
     async def _scan_port(cls, ip, port, timeout):
         """Async port scan for single port"""
 
+        cls.ports_scanned += 1
+
         try:
-            conn = asyncio.open_connection(ip, port)
-            await asyncio.wait_for(conn, timeout=timeout)
+            reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, port), timeout=timeout)
+            writer.close()
+            await writer.wait_closed()
 
             with Variables.LOCK:
                 console.print(f"[bold green][+] Active:[/bold green][yellow] {ip}:[/yellow]{port}")
@@ -84,7 +88,7 @@ class Async_Port_Scanner():
             await cls._scan_ip(ip, ports, timeout, max_concurrent)
 
             with Variables.LOCK:
-                Variables.panel_text = (f"[{c5}]IPs Scanned:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
+                Variables.panel_text = (f"[{c5}]Ports Scanned:[/{c5}] {cls.ports_scanned}  -  [{c5}]Open:[/{c5}] {cls.total_ports}")
 
 
     @classmethod
