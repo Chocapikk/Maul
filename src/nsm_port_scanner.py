@@ -154,10 +154,10 @@ class Socket_Port_Scanner():
 
         cls.ports_scanned += 1
 
-        # Update panel every 100 scans
+
         if cls.ports_scanned % 100 == 0:
             with Variables.LOCK:
-                Variables.panel_text = (f"[yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
+                Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -202,8 +202,7 @@ class Socket_Port_Scanner():
                 # Submit all ports for this IP and wait for completion before next IP
                 futures = [executor.submit(cls._port_scanner, ip, port, timeout) for port in range(0, 65536)]
 
-                with Variables.LOCK:
-                    Variables.panel_text = (f"[{c5}]IPs Scanning:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
+                with Variables.LOCK: Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
 
 
     
