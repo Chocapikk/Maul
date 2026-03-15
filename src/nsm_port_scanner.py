@@ -79,24 +79,10 @@ class Socket_Port_Scanner():
 
 
 
-    
+
     @classmethod
-    def _threader_ports(cls, ip, max_threads):
-        """This will spawn a thread for each port"""
-
-
-
-        with ThreadPoolExecutor(max_workers=max_threads) as executor:
-
-            for port in range(0,65536): executor.submit(cls._port_scanner, ip, port, 1)
-
-
-
-    
-    @classmethod
-    def _threader_ip(cls, ips, max_threads):
-        """This will spawn a thread for its own ip"""
-
+    def _threader_all(cls, ips, max_threads, timeout=1):
+        """Single thread pool for all IP:port combinations"""
 
         c1 = "bold green"
         c2 = "bold yellow"
@@ -104,14 +90,15 @@ class Socket_Port_Scanner():
         c5 = "yellow"
         c6 = "bold red"
 
-
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
-
             for ip in ips:
                 cls.total += 1
-                with Variables.LOCK: Variables.panel_text = (f"[{c5}]IPs Scanning:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
-                console.print(f"[bold green][+] Threading:[yellow] {ip}")
-                executor.submit(cls._threader_ports, ip, max_threads)
+                console.print(f"[bold green][+] Queuing:[yellow] {ip}")
+                for port in range(0, 65536):
+                    executor.submit(cls._port_scanner, ip, port, timeout)
+
+                with Variables.LOCK:
+                    Variables.panel_text = (f"[{c5}]IPs Queued:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
 
 
     
@@ -121,16 +108,17 @@ class Socket_Port_Scanner():
         
 
         ips         = Variables.ips
+        timeout     =  Variables.timeout
         max_threads = Variables.max_threads
 
 
         ips = File_Saver.ips_sanitizer(ips=ips, verbose=True)
         time_total = time.time()
 
-        
+
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Mass Port Scanning  {p}\n")
-        cls._threader_ip(ips=ips, max_threads=max_threads)
+        cls._threader_all(ips=ips, max_threads=max_threads, timeout=timeout)
         File_Saver.push_scan_results(data=cls.ip_port_map, f_type="json")
 
 
