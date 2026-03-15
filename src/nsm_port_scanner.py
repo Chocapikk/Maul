@@ -66,8 +66,7 @@ class Socket_Port_Scanner():
                             
                             if ip not in cls.ip_port_map: cls.ip_port_map[ip] = {"ports": []}
 
-                            cls.ip_port_map[ip]["port"].append(port); cls.total_ports += 1
-                            Variables.panel_text = (f"[{c5}]IPs Scanning:[/{c5}] {cls.total}  -  [{c5}]Ports_Found:[/{c5}] {cls.total_ports}")
+                            cls.ip_port_map[ip]["ports"].append(port); cls.total_ports += 1
                             return True
                     
 
