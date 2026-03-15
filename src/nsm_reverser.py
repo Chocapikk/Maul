@@ -335,7 +335,7 @@ class Reverse_IP_Domain():
         return sorted(cleaned)
 
     @classmethod
-    def respiterespitemain(cls):
+    def main(cls):
         """This will control domain <-- ip  // mapping"""
 
 
@@ -343,7 +343,7 @@ class Reverse_IP_Domain():
         max_threads = Variables.max_threads
         
         
-        ips = Reverse_IP_Domain._ips_sanitzer(ips=ips)
+        ips = File_Saver.ips_sanitzer(ips=ips)
 
         p = "=" * 10
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")
