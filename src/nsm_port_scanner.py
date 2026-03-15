@@ -113,7 +113,7 @@ class Socket_Port_Scanner():
             cls.total_ips_scanned += 1
             # cls._threader_ports(ip=ip, timeout=timeout)
             threading.Thread(target=cls._threader_ports, args=(ip, timeout), daemon=True).start()
-            console.print(f"]\n[bold green][+] Scanning:[yellow] {ip}")
+            console.print(f"\n[bold green][+] Scanning:[yellow] {ip}")
 
 
     
