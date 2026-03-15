@@ -34,7 +34,6 @@ class Socket_Port_Scanner():
     total_ports_open  = 0
     ports_scanned     = 0
     ip_port_map       = {}
-    semaphore         = None
 
 
     @classmethod
@@ -77,16 +76,13 @@ class Socket_Port_Scanner():
     def _threader_ports(cls, ip, timeout):
         """This will spawn a raw thread for each port // concurrent futures is ass lol """
 
-        def scan_with_sem(port):
-            with cls.semaphore:
-                cls._port_scanner(ip, port, timeout)
 
         threads = []
 
-        for port in range(0,65536):
-            
-            
-            t = threading.Thread(target=scan_with_sem, args=(port,), daemon=True); t.start()
+        for port in range(0,65356):
+
+
+            t = threading.Thread(target=cls._port_scanner, args=(ip, port, timeout), daemon=True); t.start()
             threads.append(t)
         
 
@@ -105,7 +101,7 @@ class Socket_Port_Scanner():
     def _threader_ips(cls, ips, max_threads, timeout=1):
         """This will spawn threads for ips // maybe idk yet"""
 
-        cls.semaphore = threading.Semaphore(max_threads)
+
 
         for ip in ips:
             if not ip: continue
