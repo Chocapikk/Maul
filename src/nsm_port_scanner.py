@@ -197,12 +197,11 @@ class Socket_Port_Scanner():
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
             for ip in ips:
                 cls.total += 1
-                console.print(f"[bold green][+] Scanning:[yellow] {ip}")
+                console.print(f"[bold green][+] Queuing:[yellow] {ip}")
 
-                # Submit all ports for this IP and wait for completion before next IP
-                futures = [executor.submit(cls._port_scanner, ip, port, timeout) for port in range(0, 65536)]
-
-                with Variables.LOCK: Variables.panel_text = (f"[yellow]IPs:[/yellow] {cls.total}  -  [yellow]Ports Scanned:[/yellow] {cls.ports_scanned}  -  [yellow]Open:[/yellow] {cls.total_ports}")
+                # Submit all ports for all IPs to the pool
+                for port in range(0, 65536):
+                    executor.submit(cls._port_scanner, ip, port, timeout)
 
 
     
