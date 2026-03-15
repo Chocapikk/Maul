@@ -83,12 +83,12 @@ class Socket_Port_Scanner():
         for port in range(0,65356):
 
 
-            t = threading.Thread(target=cls._port_scanner, args=(ip, port, timeout), daemon=True); t.start()
+            t = threading.Thread(target=cls._port_scanner, args=(ip, port, timeout), daemon=True)
             threads.append(t)
         
+        for t in threads: t.start()
 
-        for t in threads:
-            t.join()
+        for t in threads: t.join()
         
         console.print(f"[bold red][+] Nutted:[yellow] {ip}")
         with Variables.LOCK: cls.active -= 1
