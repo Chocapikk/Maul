@@ -12,7 +12,7 @@ console = Console()
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_reverser import Reverse_IP_Domain
-from nsm_port_scanner import Socket_Port_Scanner, Async_Port_Scanner
+from nsm_port_scanner import Socket_Port_Scanner
 from nsm_subdomain_scanner import Subdomain_Scanner
 from nsm_directory_scanner import Directory_Scanner
 from nsm_database import File_Saver
