@@ -9,6 +9,15 @@ from rich.panel import Panel
 
 class Variables():
     """Host multi-module vars in here"""
+
+
+
+    # TYPE OF SCAN
+    scan_rdns  = False
+    scan_ports = False
+    scan_sub   = False
+    scan_dir   = False
+    scan_sd    = False
  
     
     ips          = False
@@ -27,6 +36,7 @@ class Variables():
     max_threads = 250
     timeout     = 1
     save        = False
+    save_name   = False
     LOCK        = threading.Lock()
     
     found_doms = []

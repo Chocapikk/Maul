@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # NSM IMPORTS
 from nsm_vars import Variables
+from nsm_database import File_Saver
 
 
 
@@ -32,38 +33,6 @@ class Reverse_IP_Domain():
 
 
 
-    @classmethod
-    def _ips_sanitzer(cls, ips, verbose=True) -> set:
-        """This will sanitize and validate ips list"""
-
-
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
-        c6 = "bold red"
-
-        valid_ips = set()
-
-        
-        try:
-
-            path = Path() / str(ips)
-            if not path.exists(): console.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
-            console.print(path)
-            with open(path, "r") as file:
-
-                for word in file:
-                    ip = word.strip().split('\t'); ip = ''.join(ip)
-                    console.print(ip)
-                    Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-                    valid_ips.add(ip)
-
-            if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
-            return valid_ips
- 
-        except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
-        
 
  
     @classmethod
@@ -167,7 +136,7 @@ class Reverse_IP_Domain():
     
 
     @classmethod
-    def main(cls):
+    def respiterespitemain(cls):
         """This will control domain <-- ip  // mapping"""
 
 
@@ -175,7 +144,7 @@ class Reverse_IP_Domain():
         max_threads = Variables.max_threads
         
         
-        ips = Reverse_IP_Domain._ips_sanitzer(ips=ips)
+        ips = File_Saver.ips_sanitizer(ips=ips)
 
         p = "=" * 10
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")

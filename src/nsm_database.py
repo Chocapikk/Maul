@@ -87,7 +87,39 @@ class File_Saver():
         except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e}")
         
     
+    
+    @classmethod
+    def ips_sanitizer(cls, ips, verbose):
+        """This will sanitize and validate ips list"""
 
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c4 = "bold blue"
+        c5 = "yellow"
+        c6 = "bold red"
+
+        valid_ips = set()
+
+        
+        try:
+
+            path = Path() / str(ips)
+            if not path.exists(): console.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
+            console.print(path)
+            with open(path, "r") as file:
+
+                for word in file:
+                    ip = word.strip().split('\t'); ip = ''.join(ip)
+                    console.print(ip)
+                    Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    valid_ips.add(ip)
+
+            if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
+            return valid_ips
+ 
+        except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
+        
 
     @classmethod
     def make_path(cls):

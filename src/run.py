@@ -12,6 +12,7 @@ console = Console()
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_reverser import Reverse_IP_Domain
+from nsm_port_scanner import Socket_Port_Scanner
 from nsm_subdomain_scanner import Subdomain_Scanner
 from nsm_directory_scanner import Directory_Scanner
 from nsm_database import File_Saver
@@ -56,7 +57,8 @@ class Run():
             
 
             if Variables.save: File_Saver.make_path()
-            if Variables.ips: Reverse_IP_Domain.main()
+            if Variables.ips and Variables.scan_rdns: Reverse_IP_Domain.main()
+            if Variables.ips and Variables.scan_ports: Socket_Port_Scanner.main()
             if Variables.url or Variables.domains or Variables.found_doms: Subdomain_Scanner.main()
             if Variables.found_subs: Directory_Scanner.main()          
             if Variables.save: File_Saver.push_scan_results(data=Variables.found_subs)

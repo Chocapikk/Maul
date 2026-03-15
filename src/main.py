@@ -73,6 +73,7 @@ class Main():
 
     parser.add_argument("--timeout", help="Set custom timeout for scanning/enumeration")
     parser.add_argument("--save",    action="store_true", help="To save your scan results")
+    parser.add_argument("--x",       help="Use this to give a custom file namegreen")
 
 
 
@@ -90,6 +91,7 @@ class Main():
 
     Variables.timeout      = args.timeout      or 5
     Variables.save         = args.save         or False
+    Variables.save_name    = args.x            or False
     
 
 
