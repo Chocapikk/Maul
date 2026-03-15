@@ -89,7 +89,7 @@ class Socket_Port_Scanner():
         for t in threads:
             t.join()
         
-        console.print(f"\n[bold red][+] Nutted:[yellow] {ip}")
+        console.print(f"[bold red][+] Nutted:[yellow] {ip}")
 
 
 
@@ -106,7 +106,7 @@ class Socket_Port_Scanner():
         for ip in ips:
             if not ip: continue
             cls.total_ips_scanned += 1
-            console.print(f"[bold green][+] Scanning:[yellow] {ip}")
+            console.print(f"]\n[bold green][+] Scanning:[yellow] {ip}")
             cls._threader_ports(ip=ip, timeout=timeout)
 
 
