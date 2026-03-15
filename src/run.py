@@ -12,15 +12,22 @@ console = Console()
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_reverser import Reverse_IP_Domain
+<<<<<<< HEAD
 from nsm_port_scanner import Socket_Port_Scanner
 from nsm_subdomain_scanner import Subdomain_Scanner
 from nsm_directory_scanner import Directory_Scanner
+=======
+#from nsm_subdomain_scanner import Subdomain_Scanner
+#from nsm_directory_scanner import Directory_Scanner
+from nsm_subdomain_scanner_async import Async_Subdomain_Scanner
+from nsm_directory_scanner_async import Async_Directory_Scanner
+>>>>>>> refs/remotes/origin/main
 from nsm_database import File_Saver
 
 
 
 # ETC IMPORTS
-import time, threading
+import time, threading, asyncio
 
 
 
@@ -40,21 +47,21 @@ class Run():
             text = Variables.panel_text
             Variables.panel.renderable = text
 
-            time.sleep(1)
+            time.sleep(0.0005)
 
     
-    
+
     @staticmethod
     def runner():
         """I need no comment // LOL"""
 
 
-    
+
         with Live(Variables.panel, console=Variables.console, refresh_per_second=Variables.refresh_per_second):
 
 
             threading.Thread(target=Run.update, args=(), daemon=True).start()
-            
+
 
             if Variables.save: File_Saver.make_path()
             if Variables.ips and Variables.scan_rdns: Reverse_IP_Domain.main()

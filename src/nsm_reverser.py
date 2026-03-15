@@ -9,7 +9,7 @@ from rich.panel import Panel
 
 
 # ETC IMPORTS
-import dns.resolver, socket, ssl, sys, time
+import dns.resolver, socket, ssl, sys, time, re
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # NSM IMPORTS
 from nsm_vars import Variables
+from nsm_database import File_Saver
 from nsm_database import File_Saver
 
 
@@ -32,7 +33,48 @@ class Reverse_IP_Domain():
     """This class will be responsible for pulling domains from ips"""
 
 
+    scan_socket = 0
+    scan_ssl    = 0
+    scan_ptr    = 0
 
+    scan = 0
+    total = 0
+
+
+
+
+    @classmethod
+    def _ips_sanitzer(cls, ips, verbose=True) -> set:
+        """This will sanitize and validate ips list"""
+
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c4 = "bold blue"
+        c5 = "yellow"
+        c6 = "bold red"
+
+        valid_ips = set()
+
+        
+        try:
+
+            path = Path() / str(ips)
+            if not path.exists(): console.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
+            console.print(path)
+            with open(path, "r") as file:
+
+                for word in file:
+                    ip = word.strip().split('\t'); ip = ''.join(ip)
+                    console.print(ip)
+                    Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    valid_ips.add(ip)
+
+            if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
+            return valid_ips
+ 
+        except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
+        
 
  
     @classmethod
@@ -57,6 +99,7 @@ class Reverse_IP_Domain():
             with Variables.LOCK:
                 console.print(f"[{c1}][*] Socket:[{c2}] {domain}")
                 Variables.found_doms.append(domain)
+                cls.scan_socket += 1
 
 
         except Exception as e: 
@@ -79,23 +122,115 @@ class Reverse_IP_Domain():
 
         try:
 
+            # Create socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            sock.connect((ip, 443))
 
-            with socket.create_connection((ip,443), socket.SOCK_STREAM) as s:
-                
-                context = ssl.create_default_context()
-                ssl_sock = context.wrap_socket(s, server_hostname=ip)
-                cert = ssl_sock.getpeercert()
-                
-                subject = dict(x[0] for x in cert['subject'])
-                domain = subject.get('commonName') or subject.get('CN')
-                console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
-                Variables.found_doms.append(domain)
+            # Wrap with SSL
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+
+            ssl_sock = context.wrap_socket(sock, server_hostname=ip)
+
+            # Get certificate in binary DER format
+            cert_bin = ssl_sock.getpeercert(binary_form=True)
+            ssl_sock.close()
+
+            # Parse certificate using x509
+            import OpenSSL.crypto
+            x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert_bin)
+
+            # Extract all domains from certificate
+            domains = set()
+
+            # Get CN from subject
+            subject = x509.get_subject()
+            cn = subject.CN
+            if cn:
+                domains.add(cn)
+
+            # Get all SANs (Subject Alternative Names)
+            for i in range(x509.get_extension_count()):
+                ext = x509.get_extension(i)
+                if 'subjectAltName' in str(ext.get_short_name()):
+                    san_str = str(ext)
+                    # Parse SANs from the extension string
+                    for san in san_str.split(','):
+                        san = san.strip()
+                        if san.startswith('DNS:'):
+                            domain = san.replace('DNS:', '')
+                            domains.add(domain)
+
+            # Print and store all found domains
+            if domains:
+                with Variables.LOCK:
+                    cls.scan_ssl += 1
+                    for domain in domains:
+                        console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
+                        if domain not in Variables.found_doms:
+                            Variables.found_doms.append(domain)
+
+                    Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
 
+        except socket.timeout:
+            if verbose: console.print(f"[{c6}][-] SSL: Timeout connecting to {ip}:443")
+            Variables.errors +=1
+        except ConnectionRefusedError:
+            if verbose: console.print(f"[{c6}][-] SSL: Connection refused for {ip}:443")
+            Variables.errors +=1
+        except Exception as e:
+            if verbose: console.print(f"[{c6}][-] SSL Exception Error:[{c2}] {e}")
+            Variables.errors +=1
 
-        except Exception as e: 
-            if verbose: console.print(f"[{c6}][-] SSL Exception Error:[/{c6}] {e}")
+
+    @classmethod
+    def _pull_domains_ptr(cls, ip, verbose=False):
+        """This will pull domains using PTR DNS records"""
+
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c4 = "bold blue"
+        c5 = "yellow"
+        c6 = "bold red"
+
+
+
+        try:
+
+            cls.scan += 1
+
+            # Reverse DNS lookup using PTR records
+            resolver = dns.resolver.Resolver()
+            resolver.timeout = 3
+            resolver.lifetime = 3
+
+            # Create reverse IP address for PTR lookup
+            rev_ip = dns.reversename.from_address(ip)
+            answers = resolver.resolve(rev_ip, 'PTR')
+
+            with Variables.LOCK:
+                cls.scan_ptr += 1
+                for rdata in answers:
+                    domain = str(rdata).rstrip('.')
+                    console.print(f"[{c1}][*] PTR:[{c2}] {domain}")
+                    if domain not in Variables.found_doms:
+                        Variables.found_doms.append(domain)
+
+                Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+
+        except dns.resolver.NXDOMAIN:
+            if verbose: console.print(f"[{c6}][-] PTR: No PTR record for {ip}")
+            Variables.errors +=1
+        except dns.resolver.NoAnswer:
+            if verbose: console.print(f"[{c6}][-] PTR: No answer for {ip}")
+            Variables.errors +=1
+        except Exception as e:
+            if verbose: console.print(f"[{c6}][-] PTR Exception Error:[/{c6}] {e}")
             Variables.errors +=1
     
 
@@ -114,26 +249,90 @@ class Reverse_IP_Domain():
 
         max_threads = int(max_threads)
         futures = []
-
+        cls.total = len(ips)
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
-            
+
                 for ip in ips:
-                    while len(futures) < max_threads:
-             
-                        futures.append(executor.submit(Reverse_IP_Domain._pull_domains_socket, ip))
+                    # Submit all three lookup methods for each IP
+                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_socket, ip))
+                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ssl, ip))
+                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
 
-                    futures = [f for f in futures if not f.done()]    
-                    Variables.panel.renderable = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    #Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
+
+               
+            except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
             
 
-            except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
 
 
-    
+    @classmethod
+    def _clean_domains(cls, domains):
+        """
+        Clean domain list for external tool usage
+
+        Filters out:
+        - Wildcard domains (but saves root domain: *.example.com → example.com)
+        - Certificate junk (CloudFlare Origin, WAF, Traefik default certs)
+        - PTR noise (ptr.network, centraldnserver.com)
+        - Hash domains (32+ char hex strings from default certificates)
+        - Invalid domains (no TLD, single words, malformed)
+        - IP addresses formatted as domains
+        - Empty lines
+
+        Returns: Sorted list of clean, usable domains
+        """
+
+        c1 = "bold green"
+        c5 = "yellow"
+
+        cleaned = set()
+        Variables.panel_text = (f"[{c5}] Cleaning and Saving Results!")
+
+        for domain in domains:
+            domain = domain.strip()
+
+            if not domain:
+                continue
+
+            if domain.startswith('*'):
+                root = domain.replace('*.', '')
+                if root and '.' in root:
+                    cleaned.add(root.lower())
+                continue
+
+            if any(x in domain.lower() for x in ['certificate', 'waf', 'traefik.default', 'origin', 'reported', 'attack behavior']):
+                continue
+
+            if any(x in domain for x in ['ptr.network', 'centraldnserver.com', 'ip-ptr.tech', 'static.hostiran.name', 'localhost']):
+                continue
+
+            if len(domain.split('.')[0]) > 30 and domain.split('.')[0].replace('-', '').isalnum():
+                continue
+
+            if re.match(r'^[\d\-\.]+\.(static|ip-ptr|ptr)', domain):
+                continue
+
+            if '.' not in domain:
+                continue
+
+            tld = domain.split('.')[-1]
+            if not tld.isalpha() or len(tld) < 2 or len(tld) > 10:
+                continue
+
+            if domain.count('.') == 3 and all(part.isdigit() for part in domain.split('.')):
+                continue
+
+            cleaned.add(domain.lower()) 
+        
+
+
+        return sorted(cleaned)
 
     @classmethod
     def respiterespitemain(cls):
@@ -144,11 +343,25 @@ class Reverse_IP_Domain():
         max_threads = Variables.max_threads
         
         
-        ips = File_Saver.ips_sanitizer(ips=ips)
+        ips = Reverse_IP_Domain._ips_sanitzer(ips=ips)
 
         p = "=" * 10
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")
         Reverse_IP_Domain._threader(max_threads=max_threads, ips=ips)
+
+ 
+        File_Saver.push_scan_results(data=Variables.found_doms, reverse=True)
+
+        cleaned_domains = Reverse_IP_Domain._clean_domains(Variables.found_doms)
+        File_Saver.push_scan_results(data=cleaned_domains, reverse=True)
+
+        
+        c1 = "bold green"
+        console.print(
+            f"\n[{c1}][+] IP Addresses:[{c1}] {len(ips)}"
+            f"\n\n[{c1}][+] Cleaned domains:[bold yellow] {len(Variables.found_doms)} → {len(cleaned_domains)}"
+            f"\n[{c1}][+] Domains <-- IPs:[bold yellow] {len(cleaned_domains)}\n"
+        )
 
 
 
