@@ -54,37 +54,55 @@ class Main():
 
 
 
-    parser = argparse.ArgumentParser(description="Scanning tool for deep infrastructure analysis")
+    parser = argparse.ArgumentParser(description="Deep infrastructure scanning and enumeration framework")
 
-    
-    parser.add_argument("-i",             help="pass a list of ips")
-    parser.add_argument("-u",             help="pass a single url for scanning")
-    parser.add_argument("-d",             help="Pass .txt file filled with domains")
-    parser.add_argument("-t",             help="Max amount of threads to spawn")
 
-    parser.add_argument("--status-codes",       help="Set status codes to filter for")
-    parser.add_argument("--sub-wordlist", 
+    # INPUT OPTIONS
+    parser.add_argument("-i",             help="Input file containing list of IPs")
+    parser.add_argument("-u",             help="Single URL target for scanning")
+    parser.add_argument("-d",             help="Input file containing list of domains")
+    parser.add_argument("-t",             help="Maximum threads (default: 250)")
+
+    # SCAN TYPES
+    parser.add_argument("--rdns",  action="store_true", help="Perform reverse DNS lookup on IPs")
+    parser.add_argument("--ports", action="store_true", help="Perform port scanning on IPs")
+    parser.add_argument("--subs",  action="store_true", help="Perform subdomain enumeration")
+    parser.add_argument("--dirs",  action="store_true", help="Perform directory/file bruteforce")
+    parser.add_argument("--all",   action="store_true", help="Run all available scan types")
+
+    # SCAN CONFIG
+    parser.add_argument("--status-codes",       help="Comma-separated HTTP status codes to filter (default: 200,204,301,302,303,304)")
+    parser.add_argument("--sub-wordlist",
                         choices=["1","2","3","4","tiny.txt", "small.txt", "medium.txt", "large.txt"],
-                        help="Pass wordlist you want to use")
-    parser.add_argument("--dir-wordlist", 
+                        help="Subdomain wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)")
+    parser.add_argument("--dir-wordlist",
                         choices=["1","2","3","4","tiny.txt", "small.txt", "medium.txt", "large.txt"],
-                        help="Pass wordlist you want to use")
-    parser.add_argument("--mutations",    help="Pass a mutations wordlist that you want to use")
+                        help="Directory wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)")
+    parser.add_argument("--mutations",    help="Custom mutations wordlist for subdomain permutations")
 
-    parser.add_argument("--timeout", help="Set custom timeout for scanning/enumeration")
-    parser.add_argument("--save",    action="store_true", help="To save your scan results")
-    parser.add_argument("--x",       help="Use this to give a custom file namegreen")
+    # OUTPUT
+    parser.add_argument("--timeout", help="Request timeout in seconds (default: 5)")
+    parser.add_argument("--save",    action="store_true", help="Save scan results to file")
+    parser.add_argument("--x",       help="Custom output filename")
 
 
 
     args = parser.parse_args()
 
-    
+
     Variables.ips          = args.i            or False
     Variables.url          = args.u            or False
     Variables.domains      = args.d            or False
     Variables.max_threads  = args.t            or 250
-    
+
+    Variables.scan_rdns    = args.rdns         or False
+    Variables.scan_ports   = args.ports        or False
+    Variables.scan_sub     = args.subs         or False
+    Variables.scan_dir     = args.dirs         or False
+
+    if args.all:
+        Variables.scan_rdns = Variables.scan_ports = Variables.scan_sub = Variables.scan_dir = True
+
     Variables.status_codes = args.status_codes or False
     Variables.wordlist_sub = args.sub_wordlist or "2"
     Variables.wordlist_dir = args.dir_wordlist or "2"
