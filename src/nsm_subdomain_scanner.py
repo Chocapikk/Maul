@@ -148,7 +148,7 @@ class Subdomain_Scanner():
     
 
     @classmethod
-    def _subdomain_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
+    def _subdomain_scanner(cls, sub, domain, mutations=False, CONSOLE=console, verbose=False):
         """Subdomain scan happens here"""
 
 
@@ -160,7 +160,6 @@ class Subdomain_Scanner():
         c7 = "bold red"
 
         if not cls.scan: return Exception
-        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller()
 
 
 
@@ -214,11 +213,12 @@ class Subdomain_Scanner():
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
-                while cls.creations and cls.scan:
-                    executor.submit(Subdomain_Scanner._subdomain_scanner)
+                for sub, domain in cls.creations:
+                    if not cls.scan: break
+                    executor.submit(Subdomain_Scanner._subdomain_scanner, sub, domain)
 
                     if cls.scanned % 100 == 0:
-                        Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+                        Variables.panel_text = f"Target:[{c5}] {sub}.{domain}[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
             except KeyboardInterrupt as e:
                 CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}");
