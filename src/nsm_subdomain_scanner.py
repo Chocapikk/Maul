@@ -168,7 +168,7 @@ class Subdomain_Scanner():
         c7 = "bold red"
 
         if not cls.scan: return Exception
-        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller()l
+        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller()
 
 
 
