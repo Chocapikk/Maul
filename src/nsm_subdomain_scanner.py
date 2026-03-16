@@ -24,15 +24,18 @@ from nsm_vars import Variables
 
 # CONSTANTS
 console  = Variables.console
-resolver = dns.resolver.Resolver()
-resolver.timeout  = 2
-resolver.lifetime = 2
-resolver.nameservers = (
-    "1.1.1.1",
-    "8.8.8.8",
-    "9.9.9.9"
-) 
+resolver = dns.resolver.Resolver(configure=False)
 
+resolver.timeout = 2
+resolver.lifetime = 2
+
+resolver.nameservers = [
+    "1.1.1.1",
+    "1.0.0.1",
+    "8.8.8.8",
+    "8.8.4.4",
+    "9.9.9.9"
+]
 
 
 
