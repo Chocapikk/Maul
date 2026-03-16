@@ -14,7 +14,7 @@ import requests, ipaddress, sys, time
 import dns.resolver
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-
+from collections import deque
 
 
 # NSM IMPORTS
@@ -23,7 +23,13 @@ from nsm_vars import Variables
 
 
 # CONSTANTS
-console = Variables.console
+console  = Variables.console
+resolver = dns.resolver.Resolver()
+resolver.nameservers = (
+    "1.1.1.1",
+    "8.8.8.8",
+    "9.9.9.9"
+) 
 
 
 
@@ -34,7 +40,7 @@ class Subdomain_Scanner():
     
     done = 0
     scan = True
-    creations = []
+    creations = deque()
     total = 0
     current_sub = False
 
@@ -43,7 +49,7 @@ class Subdomain_Scanner():
     @classmethod
     def _iter_controller(cls, url=False, domains=False, subdomains=False, CONSOLE=console):
         """This will be respomsible for passing domain and sub arguments"""
-       
+    
 
         if not cls.creations:
             if domains: targets = [domain for domain in domains] 
@@ -56,11 +62,11 @@ class Subdomain_Scanner():
             
             CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
         
-        s, d = cls.creations.pop(0)
+        s, d = cls.creations.popleft()
         if cls.current_sub != s: cls.current_sub = s
         #console.print(s,d)
         return s,d
-         
+        
 
         
     @staticmethod
@@ -98,7 +104,7 @@ class Subdomain_Scanner():
                 for word in file:
                     text = word.strip().split("\t"); text = ''.join(text)
                     valid_wordlist.add(text)
-                 
+                
 
                 
             if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated sub wordlist: {path}")
@@ -148,7 +154,7 @@ class Subdomain_Scanner():
     
 
     @classmethod
-    def _subdomain_scanner(cls, sub, domain, mutations=False, CONSOLE=console, verbose=False):
+    def _subdomain_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
         """Subdomain scan happens here"""
 
 
@@ -160,6 +166,7 @@ class Subdomain_Scanner():
         c7 = "bold red"
 
         if not cls.scan: return Exception
+        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller()
 
 
 
@@ -167,7 +174,7 @@ class Subdomain_Scanner():
 
             with Variables.LOCK: Variables.completed_sub += 1; cls.scanned += 1
             subdomain = (f"{sub}.{domain}")
-            rdata = dns.resolver.resolve(subdomain, "A")
+            rdata = resolver.resolve(subdomain, "A")
 
             # Update counter and panel text with FRESH values
                 # Rebuild f-string here with current cls.done value
@@ -175,8 +182,8 @@ class Subdomain_Scanner():
 
             if rdata:
 
-                response = requests.get(url=f"https://{subdomain}")
-                if response.status_code not in [200,204]: return False
+                #response = requests.get(url=f"https://{subdomain}", timeout=Variables.timeout)
+                #if response.status_code not in Variables.status_codes:
                 
                 CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}")
                 with Variables.LOCK: Variables.found_subs.append(subdomain); return True
@@ -186,6 +193,19 @@ class Subdomain_Scanner():
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1; return False
         
+    
+    
+    @classmethod
+    def _worker(cls):
+        """Worker thread that repeatedly runs the scanner"""
+
+        while cls.scan:
+
+            with Variables.LOCK:
+                if not cls.creations:
+                    return
+
+            cls._subdomain_scanner()
 
 
     @classmethod
@@ -208,26 +228,34 @@ class Subdomain_Scanner():
         except Exception: max_threads = 250
         Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
-
+        
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
-                for sub, domain in cls.creations:
-                    if not cls.scan: break
-                    executor.submit(Subdomain_Scanner._subdomain_scanner, sub, domain)
 
-                    if cls.scanned % 100 == 0:
-                        Variables.panel_text = f"Target:[{c5}] {sub}.{domain}[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+                for _ in range(max_threads):
+                    futures.append(executor.submit(cls._worker))
+
+                for f in futures:
+                    f.result()
+
+                if cls.scanned % 100 == 0:
+                    Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+
 
             except KeyboardInterrupt as e:
-                CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}");
-                Variables.errors += 1;
-                cls.scan = False;
-                exit()
-            except Exception as e:
-                Variables.errors += 1;
+                if verbose: CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}")
+                Variables.errors += 1
                 cls.scan = False
+                exit()
+
+            except Exception as e:
+                if verbose: CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}")
+                Variables.errors += 1
+                cls.scan = False
+                exit()
+
 
         CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
 
