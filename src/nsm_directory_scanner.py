@@ -158,26 +158,25 @@ class Directory_Scanner():
 
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
-            while cls.scan:
 
-                try:
+            try:
+                for domain in subdomains:
+                    for dir in wordlist:
+                        if not cls.scan: break
+                        executor.submit(Directory_Scanner._directory_scanner, domain, dir)
 
-                    # OPTIMIZATION: Submit all tasks at once (executor handles queue)
-                    for domain in subdomains:
-                        for dir in wordlist:
-                            while len(futures) < max_threads and cls.scan:    
-                                futures.append(executor.submit(Directory_Scanner._directory_scanner, domain, dir))  
+                        if cls.done % 100 == 0:
+                            Variables.panel_text = f"Target:[{c5}] {domain}/{dir}[/{c5}]  -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
-                            futures = [f for f in futures if not f.done()]
-                            Variables.panel_text = f"Target:[{c5}] {domain}/{dir}[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+            except KeyboardInterrupt as e:
+                CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}");
+                Variables.errors += 1;
+                cls.scan = False
+            except Exception as e:
+                Variables.errors += 1;
+                cls.scan = False
 
-
-                except KeyboardInterrupt as e:  CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1; cls.scan = False
-                except Exception as e: Variables.errors += 1; cls.scan = False
-
-            
-            time.sleep(3)
-            CONSOLE.print(f"[{c1}][+] Directory Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
+        CONSOLE.print(f"[{c1}][+] Directory Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
     
     
 

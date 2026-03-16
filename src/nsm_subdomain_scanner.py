@@ -212,24 +212,24 @@ class Subdomain_Scanner():
 
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
-            while cls.scan:
 
-                try:
-                    
+            try:
+                while cls.creations and cls.scan:
                     executor.submit(Subdomain_Scanner._subdomain_scanner)
 
-                    Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
-            
+                    if cls.scanned % 100 == 0:
+                        Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
-                except KeyboardInterrupt as e:  CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}"); Variables.errors += 1; cls.scan = False; exit()
-                except Exception as e: Variables.errors += 1; cls.scan = False
+            except KeyboardInterrupt as e:
+                CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}");
+                Variables.errors += 1;
+                cls.scan = False;
+                exit()
+            except Exception as e:
+                Variables.errors += 1;
+                cls.scan = False
 
-
-                if not cls.creations:
-                    cls.scan = False
-                    break
-        
-        if executor.shutdown(wait=True): CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
+        CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
 
     
     @staticmethod
