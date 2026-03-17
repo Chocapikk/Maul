@@ -343,7 +343,7 @@ class Reverse_IP_Domain():
         max_threads = Variables.max_threads
         
         
-        ips = File_Saver.ips_sanitzer(ips=ips)
+        ips = File_Saver.ips_sanitizer(ips=ips)
 
         p = "=" * 10
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")

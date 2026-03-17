@@ -108,7 +108,7 @@ class Socket_Port_Scanner():
             if not ip: continue
 
             #while cls.active >= 1:
-            #    pass
+            #p    pass
 
             console.print(f"\n[bold green][+] Scanning:[yellow] {ip}")
             cls.total_ips_scanned += 1
