@@ -30,7 +30,7 @@ class Run():
 
 
     @staticmethod
-    def title(cls, text, total_scans, total_time=False):
+    def title(text, total_scans, total_time=False):
         """This will be used to print text"""
 
 
