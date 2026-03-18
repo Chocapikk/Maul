@@ -178,8 +178,10 @@ class Subdomain_Scanner():
         try:
 
             with Variables.LOCK: Variables.completed_sub += 1; cls.scanned += 1
-            subdomain = (f"{sub}.{domain}")
+            subdomain = (f"{sub}.{domain}"); cls.current_sub = subdomain
             rdata = resolver.resolve(subdomain, "A")
+            Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+
 
 
             # Update counter and panel text with FRESH values
@@ -240,14 +242,9 @@ class Subdomain_Scanner():
 
             try:
 
-                for _ in range(max_threads):
-                    futures.append(executor.submit(cls._worker))
+                for _ in range(max_threads): futures.append(executor.submit(cls._worker))
 
-                for f in futures:
-                    Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
-                    f.result()
-
-                    Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+                for f in futures: f.result()
 
 
             except KeyboardInterrupt as e:

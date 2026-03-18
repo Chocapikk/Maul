@@ -176,7 +176,7 @@ class Directory_Scanner():
                 Variables.errors += 1;
                 cls.scan = False
 
-        CONSOLE.print(f"[{c1}][+] Directory Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
+        CONSOLE.print(f"\n[{c1}][+] Directory Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
     
     
 
