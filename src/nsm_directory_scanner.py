@@ -267,8 +267,8 @@ class Directory_Scanner():
 
         
 
-        if domains: domains = Directory_Scanner._domain_sanitzer(domains=subdomains)
-        else:       domains = Variables.found_doms
+        if subdomains: subdomains = Directory_Scanner._domain_sanitzer(domains=subdomains)
+        else:          subdomains = Variables.found_doms
         wordlist  = Directory_Scanner._dir_sanitzer(wordlist=wordlist)
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
