@@ -154,15 +154,15 @@ class Directory_Scanner():
         c5 = "yellow"
         c6 = "green"
         c7 = "bold red"
-        
+
         if not cls.scan: return Exception
         with Variables.LOCK: subdomain, dir = Directory_Scanner._iter_controller(); Variables.completed_dir += 1; cls.scanned += 1
 
 
         try: 
             
-            subdomain = f"{subdomain}/{dir}"
-            url = f"http://{subdomain}"
+            domain = f"{subdomain}/{dir}"
+            url = f"http://{domain}"
             Variables.panel_text = f"Target:[{c5}] {subdomain}/*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
 
@@ -179,8 +179,8 @@ class Directory_Scanner():
                     elif code in [300,301,302,303,304]: cc = c2
 
 
-                    CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}][white] {url}")
-                    Variables.found_dirs.append(url)
+                    CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}][white] {domain}")
+                    Variables.found_dirs.append(domain)
                     return True
 
 
