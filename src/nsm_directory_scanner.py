@@ -267,7 +267,7 @@ class Directory_Scanner():
 
         
 
-        if domains: domains = Directory_Scanner._domain_sanitzer(domains=domains)
+        if domains: domains = Directory_Scanner._domain_sanitzer(domains=subdomains)
         else:       domains = Variables.found_doms
         wordlist  = Directory_Scanner._dir_sanitzer(wordlist=wordlist)
         p = "=" * 10
