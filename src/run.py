@@ -28,8 +28,39 @@ class Run():
     """Run scans"""
 
 
+
     @staticmethod
-    def update():
+    def title(cls, text, total_scans, total_time=False):
+        """This will be used to print text"""
+
+
+        if total_time:
+
+            hours   = total_time // 3600
+            minutes = (total_time % 3600) // 60
+            seconds = total_time % 60
+            total_time = (f"{hours}:{minutes}:{seconds}")
+
+
+        c1 = "red"; c2 = "bold green"; c3 = "bold blue"; c4 = "bold yellow"
+
+        stats = (
+            f"[{c3}] [+] Results:[{c4}] {total_scans}"
+            f"\n[{c3}]  [+] Total Scans:[{c4}] {total_scans}"
+            f"\n[{c3}]  [+] Elapsed Time:[{c4}] {total_time}"
+        )
+
+        
+        console.print(
+            f"[{c1}]=========   {text}   =========\n",
+            stats,
+            f"\n[{c1}]=================================",
+        )
+
+
+
+    @staticmethod
+    def _update():
         """This will auto update the panel.renderable // since doing it within a thread fucks it up and doesnt work"""
 
 
@@ -53,7 +84,7 @@ class Run():
         with Live(Variables.panel, console=Variables.console, refresh_per_second=Variables.refresh_per_second):
 
 
-            threading.Thread(target=Run.update, args=(), daemon=True).start()
+            threading.Thread(target=Run._update, args=(), daemon=True).start()
 
 
             if Variables.save: File_Saver.make_path()

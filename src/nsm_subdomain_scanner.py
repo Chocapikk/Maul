@@ -180,7 +180,7 @@ class Subdomain_Scanner():
             with Variables.LOCK: Variables.completed_sub += 1; cls.scanned += 1
             subdomain = (f"{sub}.{domain}"); cls.current_sub = subdomain
             rdata = resolver.resolve(subdomain, "A")
-            Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+            Variables.anel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
 
 
@@ -193,7 +193,7 @@ class Subdomain_Scanner():
                 #response = requests.get(url=f"https://{subdomain}", timeout=Variables.timeout)
                 #if response.status_code not in Variables.status_codes:
                 
-                CONSOLE.print(f"[{c1}][*][{c2}] {subdomain} - {cls.scanned}/{cls.total}")
+                CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}") # - {cls.scanned}/{cls.total}")
                 with Variables.LOCK: Variables.found_subs.append(subdomain); return True
 
 
@@ -230,6 +230,7 @@ class Subdomain_Scanner():
 
         futures = []  
         cls.scanned = 0
+        cls.time_start = time.time()
 
 
         try:              max_threads = int(max_threads)
@@ -260,11 +261,9 @@ class Subdomain_Scanner():
                 exit()
 
 
-        CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
-
     
-    @staticmethod
-    def main():
+    @classmethod
+    def main(cls):
         """This will run class wide logic"""
 
         
@@ -284,6 +283,10 @@ class Subdomain_Scanner():
         console.print(f"[bold red]\n{p}  Subdomain Enumeration  {p}\n")
         Subdomain_Scanner._iter_controller(url=url, domains=domains, subdomains=wordlist)
         Subdomain_Scanner._threader(max_threads=max_threads)
+        
+        from run import Run
+        time_total = time.time() - cls.time_start
+        Run.title(text="Subdomain Results", total_scans=len(Variables.found_subs), total_time=time_total)
     
         
 

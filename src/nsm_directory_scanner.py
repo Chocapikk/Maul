@@ -149,7 +149,8 @@ class Directory_Scanner():
 
 
         futures = []
-        total   = len(wordlist) * len(subdomains)  # CHANGED: Total = dirs × subdomains
+        total   = len(wordlist) * len(subdomains)  #
+        cls.time_start = time.time()
 
 
         try: max_threads = int(max_threads)
@@ -169,19 +170,19 @@ class Directory_Scanner():
                             Variables.panel_text = f"Target:[{c5}] {domain}/{dir}[/{c5}]  -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
             except KeyboardInterrupt as e:
-                CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}");
-                Variables.errors += 1;
+                CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}")
+                Variables.errors += 1
                 cls.scan = False
             except Exception as e:
-                Variables.errors += 1;
+                Variables.errors += 1
                 cls.scan = False
 
         CONSOLE.print(f"\n[{c1}][+] Directory Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
     
     
 
-    @staticmethod
-    def main():
+    @classmethod
+    def main(cls):
         """This will run class wide logic"""
 
         
@@ -196,5 +197,11 @@ class Directory_Scanner():
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
         Directory_Scanner._threader(max_threads=max_threads, subdomains=subdomains, wordlist=wordlist)
+
+
+        from run import Run
+        time_total = time.time() - cls.time_start
+        Run.title(text="Directory Results", total_scans=len(Variables.found_dirs), total_time=time_total)
+    
     
         

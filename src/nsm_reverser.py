@@ -122,48 +122,40 @@ class Reverse_IP_Domain():
 
         try:
 
-            # Create socket connection
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
             sock.connect((ip, 443))
 
-            # Wrap with SSL
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
 
             ssl_sock = context.wrap_socket(sock, server_hostname=ip)
 
-            # Get certificate in binary DER format
             cert_bin = ssl_sock.getpeercert(binary_form=True)
             ssl_sock.close()
 
-            # Parse certificate using x509
             import OpenSSL.crypto
             x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert_bin)
 
-            # Extract all domains from certificate
             domains = set()
 
-            # Get CN from subject
             subject = x509.get_subject()
             cn = subject.CN
             if cn:
                 domains.add(cn)
 
-            # Get all SANs (Subject Alternative Names)
             for i in range(x509.get_extension_count()):
                 ext = x509.get_extension(i)
                 if 'subjectAltName' in str(ext.get_short_name()):
                     san_str = str(ext)
-                    # Parse SANs from the extension string
                     for san in san_str.split(','):
                         san = san.strip()
                         if san.startswith('DNS:'):
                             domain = san.replace('DNS:', '')
                             domains.add(domain)
 
-            # Print and store all found domains
+
             if domains:
                 with Variables.LOCK:
                     cls.scan_ssl += 1
@@ -204,12 +196,10 @@ class Reverse_IP_Domain():
 
             cls.scan += 1
 
-            # Reverse DNS lookup using PTR records
             resolver = dns.resolver.Resolver()
             resolver.timeout = 3
             resolver.lifetime = 3
 
-            # Create reverse IP address for PTR lookup
             rev_ip = dns.reversename.from_address(ip)
             answers = resolver.resolve(rev_ip, 'PTR')
 
@@ -238,8 +228,7 @@ class Reverse_IP_Domain():
     def _threader(cls, max_threads, ips):
         """Thread that task"""
 
-
-
+        # COLORS
         c1 = "bold green"
         c2 = "bold yellow"
         c4 = "bold blue"
@@ -250,13 +239,14 @@ class Reverse_IP_Domain():
         max_threads = int(max_threads)
         futures = []
         cls.total = len(ips)
+        cls.time_start = time.time()
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
 
                 for ip in ips:
-                    # Submit all three lookup methods for each IP
+
                     futures.append(executor.submit(Reverse_IP_Domain._pull_domains_socket, ip))
                     futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ssl, ip))
                     futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
@@ -356,12 +346,10 @@ class Reverse_IP_Domain():
         File_Saver.push_scan_results(data=cleaned_domains, reverse=True)
 
         
-        c1 = "bold green"
-        console.print(
-            f"\n[{c1}][+] IP Addresses:[{c1}] {len(ips)}"
-            f"\n\n[{c1}][+] Cleaned domains:[bold yellow] {len(Variables.found_doms)} → {len(cleaned_domains)}"
-            f"\n[{c1}][+] Domains <-- IPs:[bold yellow] {len(cleaned_domains)}\n"
-        )
+        from run import Run
+        time_total = time.time() - cls.time_start
+        Run.title(text="ReverseDNS Results", total_scans=len(Variables.found_doms), total_time=time_total)
+    
 
 
 
