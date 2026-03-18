@@ -161,7 +161,7 @@ class Directory_Scanner():
         try: 
             
             subdomain = f"{subdomain}/{dir}"
-            url = f"http://{subdomain}/{dir}"
+            url = f"http://{subdomain}"
             Variables.panel_text = f"Target:[{c5}] {subdomain}/*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
 
@@ -231,16 +231,13 @@ class Directory_Scanner():
         except Exception: max_threads = 250
 
 
-        print("1")
-
-
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
 
                 for _ in range(max_threads): futures.append(executor.submit(cls._worker))
-                print("2")
+
                 for f in futures: f.result()
 
 
