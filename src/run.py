@@ -54,9 +54,9 @@ class Run():
 
         
         console.print(
-            f"[{c1}]=========   {text}   =========\n",
+            f"\n\n[{c1}]=========   {text}   =========\n",
             stats,
-            f"\n[{c1}]=================================",
+            f"\n[{c1}]=================================\n\n",
         )
 
 
@@ -96,5 +96,5 @@ class Run():
 
             if Variables.scan_sub: Subdomain_Scanner.main()
             if Variables.scan_dir: Directory_Scanner.main()
-            
+
             if Variables.save: File_Saver.push_scan_results(data=Variables.found_subs)
