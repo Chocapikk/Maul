@@ -32,36 +32,66 @@ pip install -r requirements.txt
 
 ## Usage
 
-**Map IPs to domains:**
+**Reverse DNS lookup:**
 ```bash
-sudo venv/bin/python main.py -i ips.txt
+venv/bin/python main.py -i ips.txt --rdns --save
 ```
 
-**Subdomain scan:**
+**Port scanning:**
 ```bash
-sudo venv/bin/python main.py -u example.com --sub-wordlist large.txt
+venv/bin/python main.py -i ips.txt --ports -t 100 --timeout 1 --save
+```
+
+**Subdomain enumeration:**
+```bash
+venv/bin/python main.py -d domains.txt --subs --sub-wordlist 2 -t 100 --save
+```
+
+**Directory bruteforce:**
+```bash
+venv/bin/python main.py -d domains.txt --dirs --dir-wordlist 2 -t 50 --timeout 5 --save
 ```
 
 **Full workflow:**
 ```bash
-sudo venv/bin/python main.py -i vader_ips.txt --sub-wordlist large.txt --save
+venv/bin/python main.py -i ips.txt --all -t 100 --sub-wordlist 2 --dir-wordlist 2 --save
 ```
 
 ---
 
 ## Key Arguments
 
+### Input Options
 | Flag | Description |
 |------|-------------|
-| `-i` | IP list from Vader (auto does PTR + SSL cert extraction) |
-| `-u` | Single domain |
+| `-i` | IP list file |
+| `-u` | Single URL/domain |
 | `-d` | Domain list file |
 | `-t` | Max threads (default: 250) |
-| `--ptr-only` | Only PTR lookups (skip SSL certs) |
-| `--cert-only` | Only SSL certs (skip PTR) |
-| `--sub-wordlist` | `tiny`, `small`, `medium`, `large` |
-| `--dir-wordlist` | `tiny`, `small`, `medium`, `large` |
-| `--save` | Save results |
+
+### Scan Types
+| Flag | Description |
+|------|-------------|
+| `--rdns` | Reverse DNS lookup on IPs |
+| `--ports` | Port scan on IPs (all 65535 ports) |
+| `--subs` | Subdomain enumeration |
+| `--dirs` | Directory/file bruteforce |
+| `--all` | Run all scan types |
+
+### Scan Configuration
+| Flag | Description |
+|------|-------------|
+| `--status-codes` | HTTP status codes to filter (default: 200,204,301,302,303,304) |
+| `--sub-wordlist` | `1`/`tiny.txt`, `2`/`small.txt`, `3`/`medium.txt`, `4`/`large.txt` (default: 2) |
+| `--dir-wordlist` | `1`/`tiny.txt`, `2`/`small.txt`, `3`/`medium.txt`, `4`/`large.txt` (default: 2) |
+| `--mutations` | Custom mutations wordlist for subdomain permutations |
+
+### Output
+| Flag | Description |
+|------|-------------|
+| `--timeout` | Request timeout in seconds (default: 5) |
+| `--save` | Save scan results to file |
+| `--x` | Custom output filename |
 
 ---
 
