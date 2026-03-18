@@ -42,8 +42,8 @@ class Directory_Scanner():
     
 
         if not cls.creations:
-            if url: targets = targets = []; targets.append(url)
-            else:       [domain for domain in domains] 
+            if domains: targets = [domain for domain in domains] 
+            else:       targets = []; targets.append(url)
             cls.total = len(targets) * len(directores)
             for dom in targets:
                 for sub in directores:
