@@ -31,6 +31,7 @@ class Directory_Scanner():
     
     done  = 0
     total = 0
+    scanned = 0
     scan = True
     current_dir = False
     creations = deque()
@@ -153,10 +154,10 @@ class Directory_Scanner():
         c5 = "yellow"
         c6 = "green"
         c7 = "bold red"
-
+        
         if not cls.scan: return Exception
         with Variables.LOCK: subdomain, dir = Directory_Scanner._iter_controller(); Variables.completed_dir += 1; cls.scanned += 1
-       
+
 
         try: 
             
