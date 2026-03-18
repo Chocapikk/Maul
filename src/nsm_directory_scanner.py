@@ -49,7 +49,7 @@ class Directory_Scanner():
             for dom in targets:
                 for sub in directores:
                     #console.print(sub, dom)
-                    cls.creations.append((sub, dom))
+                    cls.creations.append((dom, sub))
             
             CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
         
