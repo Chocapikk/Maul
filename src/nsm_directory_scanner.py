@@ -231,13 +231,16 @@ class Directory_Scanner():
         except Exception: max_threads = 250
 
 
+        print("1")
+
+
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
 
                 for _ in range(max_threads): futures.append(executor.submit(cls._worker))
-
+                print("2")
                 for f in futures: f.result()
 
 
