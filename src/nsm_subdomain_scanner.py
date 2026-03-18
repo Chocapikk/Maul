@@ -266,8 +266,11 @@ class Subdomain_Scanner():
         mutations   = Variables.mutations
 
         
-        if domains: domains = Subdomain_Scanner._domain_sanitzer(domains=domains)
-        else:       domains = Variables.found_doms
+        if Variables.domains:      domains = Subdomain_Scanner._domain_sanitzer(domains=domains)
+        elif Variables.found_doms: domains = Variables.found_doms
+        else:                      domains = False
+        if not domains and not url: console.print("\n[bold red][-] Input a valid domain goofy")
+
         wordlist  = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist)
         
         p = "=" * 10

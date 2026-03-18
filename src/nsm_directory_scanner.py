@@ -37,16 +37,16 @@ class Directory_Scanner():
    
 
     @classmethod
-    def _iter_controller(cls, url=False, domains=False, subdomains=False, CONSOLE=console):
+    def _iter_controller(cls, url=False, domains=False, directores=False, CONSOLE=console):
         """This will be respomsible for passing domain and sub arguments"""
     
 
         if not cls.creations:
-            if domains: targets = [domain for domain in domains] 
-            else:       targets = []; targets.append(url)
-            cls.total = len(targets) * len(subdomains)
+            if url: targets = targets = []; targets.append(url)
+            else:       [domain for domain in domains] 
+            cls.total = len(targets) * len(directores)
             for dom in targets:
-                for sub in subdomains:
+                for sub in directores:
                     #console.print(sub, dom)
                     cls.creations.append((sub, dom))
             
@@ -94,8 +94,6 @@ class Directory_Scanner():
 
         except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
     
-
-        
 
     @staticmethod
     def _dir_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list:
@@ -214,7 +212,7 @@ class Directory_Scanner():
 
 
     @classmethod
-    def _threader(cls, max_threads, subdomains, wordlist, CONSOLE=console, verbose=True):
+    def _threader(cls, max_threads, CONSOLE=console, verbose=True):
         """This will iter through and thread --> _subdomain_scanner"""
 
 
@@ -226,7 +224,6 @@ class Directory_Scanner():
 
 
         futures = []
-        total   = len(wordlist) * len(subdomains)  #
         cls.time_start = time.time()
 
 
@@ -267,13 +264,17 @@ class Directory_Scanner():
 
         
 
-        if subdomains: subdomains = Directory_Scanner._domain_sanitzer(domains=subdomains)
-        else:          subdomains = Variables.found_doms
+        if   Variables.domains:     subdomains = Directory_Scanner._domain_sanitzer(domains=subdomains)
+        elif Variables.found_subs:  subdomains = Variables.found_subs
+        elif Variables.found_doms:  subdomains = Variables.found_doms
+        else:                       subdomains = False
+        if not subdomains and not url: console.print("\n[bold red][-] Input a valid domain goofy")
+
         wordlist  = Directory_Scanner._dir_sanitzer(wordlist=wordlist)
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
-        Directory_Scanner._iter_controller(url=url, domains=subdomains, wordlist=wordlist)
-        Directory_Scanner._threader(max_threads=max_threads, subdomains=subdomains, wordlist=wordlist)
+        Directory_Scanner._iter_controller(url=url, domains=subdomains, directores=wordlist)
+        Directory_Scanner._threader(max_threads=max_threads)
 
 
         from run import Run

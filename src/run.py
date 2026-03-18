@@ -90,8 +90,11 @@ class Run():
 
 
             if Variables.save: File_Saver.make_path()
+
             if Variables.ips and Variables.scan_rdns: Reverse_IP_Domain.main()
             if Variables.ips and Variables.scan_ports: Socket_Port_Scanner.main()
+
             if Variables.scan_sub: Subdomain_Scanner.main()
             if Variables.scan_dir: Directory_Scanner.main()
+            
             if Variables.save: File_Saver.push_scan_results(data=Variables.found_subs)
