@@ -37,7 +37,7 @@ class Run():
 
 
         if total_time:
-            total_time = f"{total_time:.2f}"
+            total_time = float(f"{total_time:.2f}")
             hours   = total_time // 3600
             minutes = (total_time % 3600) // 60
             seconds = total_time % 60
