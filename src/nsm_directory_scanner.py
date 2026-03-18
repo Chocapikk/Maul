@@ -272,6 +272,7 @@ class Directory_Scanner():
         if not subdomains and not url: console.print("\n[bold red][-] Input a valid domain goofy")
 
         wordlist  = Directory_Scanner._dir_sanitzer(wordlist=wordlist)
+        p = "=" * 10
         console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
         Directory_Scanner._iter_controller(url=url, domains=subdomains, directores=wordlist)
         Directory_Scanner._threader(max_threads=max_threads)
