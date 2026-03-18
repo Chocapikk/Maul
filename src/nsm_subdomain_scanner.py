@@ -68,7 +68,7 @@ class Subdomain_Scanner():
             CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
         
         s, d = cls.creations.popleft()
-        if cls.current_sub != s: cls.current_sub = s
+        #if cls.current_sub != s: cls.current_sub = s
         #console.print(s,d)
         return s,d
         
@@ -171,22 +171,15 @@ class Subdomain_Scanner():
         c7 = "bold red"
 
         if not cls.scan: return Exception
-        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller()
+        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller(); Variables.completed_sub += 1; cls.scanned += 1
 
 
 
         try:
 
-            with Variables.LOCK: Variables.completed_sub += 1; cls.scanned += 1
-            subdomain = (f"{sub}.{domain}"); cls.current_sub = subdomain
+            subdomain = (f"{sub}.{domain}")#; cls.current_sub = subdomain
             Variables.panel_text = f"Target:[{c5}] {sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
             rdata = resolver.resolve(subdomain, "A")
-
-
-
-            # Update counter and panel text with FRESH values
-                # Rebuild f-string here with current cls.done value
-                #Variables.panel_text = f"Target:[{c5}] {domain}[/{c5}]  -  Enumeration:[{c5}] {Variables.completed_sub}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
             if rdata:
 
@@ -235,8 +228,6 @@ class Subdomain_Scanner():
 
         try:              max_threads = int(max_threads)
         except Exception: max_threads = 250
-        Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
-
         
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
@@ -286,7 +277,7 @@ class Subdomain_Scanner():
         
         from run import Run
         time_total = time.time() - cls.time_start
-        Run.title(text="Subdomain Results", total_scans=len(Variables.found_subs), total_time=time_total)
+        Run.title(text="Subdomain Results", results=len(Variables.found_subs), total_scans=cls.total, total_time=time_total)
     
         
 

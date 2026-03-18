@@ -7,9 +7,10 @@ from rich.panel import Panel
 
 
 # ETC IMPORTS
-import requests, ipaddress, sys, time, dns.resolver
+import requests, sys, time
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from collections import deque
 
 
 
@@ -24,17 +25,77 @@ console = Variables.console
 
 
 
-
-
-
 class Directory_Scanner():
     """subdomain scanner"""
 
     
-    done = 0
+    done  = 0
+    total = 0
     scan = True
+    current_dir = False
+    creations = deque()
+   
+
+    @classmethod
+    def _iter_controller(cls, url=False, domains=False, subdomains=False, CONSOLE=console):
+        """This will be respomsible for passing domain and sub arguments"""
+    
+
+        if not cls.creations:
+            if domains: targets = [domain for domain in domains] 
+            else:       targets = []; targets.append(url)
+            cls.total = len(targets) * len(subdomains)
+            for dom in targets:
+                for sub in subdomains:
+                    #console.print(sub, dom)
+                    cls.creations.append((sub, dom))
+            
+            CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
+        
+        s, d = cls.creations.popleft()
+        #if cls.current_dir != s: cls.current_dir = s
+        #console.print(s,d)
+        return s,d
+    
+
+    @staticmethod
+    def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
+        """This will sanitize domain wordlist given by user --> coming from Vader --> Maul"""
 
 
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c4 = "bold blue"
+        c5 = "yellow"
+        c6 = "bold red"
+
+
+        valid_domains = []
+
+
+        try:
+
+            path = Path() / str(domains)
+            if not path.exists(): CONSOLE.print(f"[{c6}][-] Invalid domain wordlist given, please check README.md for help!"); sys.exit()
+
+            with open(str(path), "r") as file:
+
+                for word in file:
+                    text = word.strip().split("\n"); text = '\n'.join(text)
+                    valid_domains.append(text)
+
+
+            if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
+            return valid_domains
+            
+        
+
+        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
+
+        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
+    
+
+        
 
     @staticmethod
     def _dir_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list:
@@ -84,7 +145,7 @@ class Directory_Scanner():
     
 
     @classmethod
-    def _directory_scanner(cls, subdomain, dir, mutations=False, CONSOLE=console, verbose=False):
+    def _directory_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
         """Subdomain scan happens here"""
 
 
@@ -96,13 +157,15 @@ class Directory_Scanner():
         c7 = "bold red"
 
         if not cls.scan: return Exception
-
-
+        with Variables.LOCK: subdomain, dir = Directory_Scanner._iter_controller(); Variables.completed_dir += 1; cls.scanned += 1
+       
 
         try: 
             
-            with Variables.LOCK: cls.done += 1
+            subdomain = f"{subdomain}/{dir}"
             url = f"http://{subdomain}/{dir}"
+            Variables.panel_text = f"Target:[{c5}] {subdomain}/*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+
 
             response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False, verify=False)
             code     = response.status_code
@@ -111,7 +174,7 @@ class Directory_Scanner():
 
             if code in Variables.status_codes:
                 
-                #with Variables.LOCK:
+                with Variables.LOCK:
 
                     if code in [200,204]:cc = c6
                     elif code in [300,301,302,303,304]: cc = c2
@@ -134,6 +197,20 @@ class Directory_Scanner():
         except Exception as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1
+    
+
+
+    @classmethod
+    def _worker(cls):
+        """Worker thread that repeatedly runs the scanner"""
+
+        while cls.scan:
+
+            with Variables.LOCK:
+                if not cls.creations:
+                    return
+
+            cls._directory_scanner()
 
 
     @classmethod
@@ -161,13 +238,11 @@ class Directory_Scanner():
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
-                for domain in subdomains:
-                    for dir in wordlist:
-                        if not cls.scan: break
-                        executor.submit(Directory_Scanner._directory_scanner, domain, dir)
 
-                        if cls.done % 100 == 0:
-                            Variables.panel_text = f"Target:[{c5}] {domain}/{dir}[/{c5}]  -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+                for _ in range(max_threads): futures.append(executor.submit(cls._worker))
+
+                for f in futures: f.result()
+
 
             except KeyboardInterrupt as e:
                 CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}")
@@ -176,8 +251,6 @@ class Directory_Scanner():
             except Exception as e:
                 Variables.errors += 1
                 cls.scan = False
-
-        CONSOLE.print(f"\n[{c1}][+] Directory Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
     
     
 
@@ -186,22 +259,26 @@ class Directory_Scanner():
         """This will run class wide logic"""
 
         
-        subdomains  = Variables.found_subs
+        subdomains  = Variables.domains 
         max_threads = Variables.max_threads
         timeout     = Variables.timeout
         url         = Variables.url
         wordlist    = Variables.wordlist_dir
 
         
+
+        if domains: domains = Directory_Scanner._domain_sanitzer(domains=domains)
+        else:       domains = Variables.found_doms
         wordlist  = Directory_Scanner._dir_sanitzer(wordlist=wordlist)
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
+        Directory_Scanner._iter_controller(url=url, domains=subdomains, wordlist=wordlist)
         Directory_Scanner._threader(max_threads=max_threads, subdomains=subdomains, wordlist=wordlist)
 
 
         from run import Run
         time_total = time.time() - cls.time_start
-        Run.title(text="Directory Results", total_scans=len(Variables.found_dirs), total_time=time_total)
+        Run.title(text="Directory Results", results=len(Variables.found_dirs), total_scans=cls.total, total_time=time_total)
     
     
         

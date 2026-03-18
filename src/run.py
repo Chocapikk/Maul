@@ -1,12 +1,14 @@
 # THIS WILL RUN ALL SCANS AS A MAIN INSTANCE // ITS REALLY FOR THE LIVE FEATURE // LOL
 
 
-# ONE IMPORT
+# UI IMPORT
 from rich.live import Live
 from rich.panel import Panel
 from rich.console import Console
-console = Console()
 
+
+# ETC IMPORTS
+import time, threading, asyncio
 
 
 # NSM IMPORTS
@@ -19,8 +21,8 @@ from nsm_database import File_Saver
 
 
 
-# ETC IMPORTS
-import time, threading, asyncio
+# CONSTANTS
+console = Variables.console
 
 
 
@@ -30,7 +32,7 @@ class Run():
 
 
     @staticmethod
-    def title(text, total_scans, total_time=False):
+    def title(text, results, total_scans, total_time=False):
         """This will be used to print text"""
 
 
@@ -45,9 +47,9 @@ class Run():
         c1 = "red"; c2 = "bold green"; c3 = "bold blue"; c4 = "bold yellow"
 
         stats = (
-            f"[{c3}] [+] Results:[{c4}] {total_scans}"
-            f"\n[{c3}]  [+] Total Scans:[{c4}] {total_scans}"
-            f"\n[{c3}]  [+] Elapsed Time:[{c4}] {total_time}"
+            f"[{c2}] [+] Results:[{c4}] {results}"
+            f"\n[{c2}]  [+] Total Scans:[{c4}] {total_scans}"
+            f"\n[{c2}]  [+] Elapsed Time:[{c4}] {total_time}"
         )
 
         
