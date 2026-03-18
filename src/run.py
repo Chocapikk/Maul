@@ -37,9 +37,9 @@ class Run():
 
 
         if total_time:
-            hours = int(seconds // 3600) 
-            minutes = int((seconds % 3600) // 60)  
-            seconds = int(seconds % 60) 
+            hours = int(total_time // 3600) 
+            minutes = int((total_time % 3600) // 60)  
+            seconds = int(total_time % 60) 
             total_time = (f"{hours}:{minutes}:{seconds}")
 
 
