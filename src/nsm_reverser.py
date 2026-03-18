@@ -69,7 +69,8 @@ class Reverse_IP_Domain():
                     console.print(ip)
                     Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
                     valid_ips.add(ip)
-
+            
+            cls.total = len(valid_ips)
             if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
             return valid_ips
  
@@ -348,7 +349,7 @@ class Reverse_IP_Domain():
         
         from run import Run
         time_total = time.time() - cls.time_start
-        Run.title(text="ReverseDNS Results", total_scans=len(Variables.found_doms), total_time=time_total)
+        Run.title(text="ReverseDNS Results", results=len(Variables.found_doms), total_scans=cls.total, total_time=time_total)
     
 
 
