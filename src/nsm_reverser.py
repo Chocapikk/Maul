@@ -99,7 +99,7 @@ class Reverse_IP_Domain():
 
             with Variables.LOCK:
                 console.print(f"[{c1}][*] Socket:[{c2}] {domain}")
-                Variables.found_doms.append(domain)
+                Variables.found_doms.add(domain)
                 cls.scan_socket += 1
 
 
@@ -162,8 +162,7 @@ class Reverse_IP_Domain():
                     cls.scan_ssl += 1
                     for domain in domains:
                         console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
-                        if domain not in Variables.found_doms:
-                            Variables.found_doms.append(domain)
+                        Variables.found_doms.add(domain)
 
                     Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 

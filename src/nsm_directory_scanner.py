@@ -180,7 +180,7 @@ class Directory_Scanner():
 
 
                     CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}][white] {domain}")
-                    Variables.found_dirs.append(domain)
+                    Variables.found_dirs.add(domain)
                     return True
 
 

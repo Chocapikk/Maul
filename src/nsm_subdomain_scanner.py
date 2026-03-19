@@ -187,7 +187,7 @@ class Subdomain_Scanner():
                 #if response.status_code not in Variables.status_codes:
                 
                 CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}") # - {cls.scanned}/{cls.total}")
-                with Variables.LOCK: Variables.found_subs.append(subdomain); return True
+                with Variables.LOCK: Variables.found_subs.add(subdomain); return True
 
 
         except Exception as e: 

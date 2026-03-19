@@ -18,8 +18,8 @@ class Variables():
     scan_sub   = False
     scan_dir   = False
     scan_sd    = False
- 
-    
+
+
     ips          = False
     url          = False
     domains      = False
@@ -37,22 +37,24 @@ class Variables():
     timeout     = 1
     save        = False
     save_name   = False
-    LOCK        = threading.Lock()
-    
-    found_doms = []
-    found_subs = []
-    found_dirs = []
+    # RLock so the same thread can re-acquire without deadlocking itself like a dumbass
+    LOCK        = threading.RLock()
 
-    
+    # sets not lists, because duplicates are for people who don't respect RAM
+    found_doms = set()
+    found_subs = set()
+    found_dirs = set()
+
+
     console = Console()
-    panel_text = "False"
+    panel_text = "Starting"
     panel   = Panel(renderable="Starting", style="bold red", border_style="bold purple", expand=False)
     refresh_per_second = 1
 
- 
 
 
- 
+
+
     completed_sub = 0
     completed_dir = 0
     # COLLECT ALL ERRORS
