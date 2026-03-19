@@ -159,6 +159,9 @@ class Directory_Scanner:
         if not cls.scan:
             return False
         with Variables.LOCK:
+            # same TOCTOU fix as subdomain scanner, check inside the lock
+            if not cls.creations:
+                return False
             subdomain, directory = Directory_Scanner._iter_controller()
             Variables.completed_dir += 1
             cls.scanned += 1
@@ -182,6 +185,8 @@ class Directory_Scanner:
                         cc = c6
                     elif code in [300, 301, 302, 303, 304]:
                         cc = c2
+                    else:
+                        cc = c7  # everything else gets the angry red treatment
 
                     CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}][white] {domain}")
                     Variables.found_dirs.add(domain)

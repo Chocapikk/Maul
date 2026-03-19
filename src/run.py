@@ -90,4 +90,7 @@ class Run:
                 Directory_Scanner.main()
 
             if Variables.save:
-                File_Saver.push_scan_results(data=Variables.found_subs)
+                if Variables.found_subs:
+                    File_Saver.push_scan_results(data=Variables.found_subs)
+                if Variables.found_dirs:
+                    File_Saver.push_scan_results(data=Variables.found_dirs)

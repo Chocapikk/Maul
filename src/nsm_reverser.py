@@ -102,6 +102,8 @@ class Reverse_IP_Domain:
         """This will pull domains using the ssl library"""
 
         try:
+            # use with so we don't leak file descriptors when exceptions happen
+            # (the old code would leak sockets on timeout/refused/any error, fun times)
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
             sock.connect((ip, 443))
@@ -110,10 +112,8 @@ class Reverse_IP_Domain:
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
 
-            ssl_sock = context.wrap_socket(sock, server_hostname=ip)
-
-            cert_bin = ssl_sock.getpeercert(binary_form=True)
-            ssl_sock.close()
+            with context.wrap_socket(sock, server_hostname=ip) as ssl_sock:
+                cert_bin = ssl_sock.getpeercert(binary_form=True)
 
             import OpenSSL.crypto
 

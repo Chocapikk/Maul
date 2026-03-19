@@ -167,6 +167,10 @@ class Subdomain_Scanner:
         if not cls.scan:
             return False
         with Variables.LOCK:
+            # check inside the lock because another thread might have emptied the deque
+            # between _worker's check and here (classic TOCTOU, the race condition hall of fame)
+            if not cls.creations:
+                return False
             sub, domain = Subdomain_Scanner._iter_controller()
             Variables.completed_sub += 1
             cls.scanned += 1
@@ -193,6 +197,8 @@ class Subdomain_Scanner:
         """Worker thread that repeatedly runs the scanner"""
 
         while cls.scan:
+            # check AND pop inside the same lock, otherwise two threads can race
+            # past the empty check and one of them eats a TypeError on len(False)
             with Variables.LOCK:
                 if not cls.creations:
                     return
