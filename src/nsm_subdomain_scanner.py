@@ -10,7 +10,7 @@ from rich.console import Console
 
 
 # ETC IMPORTS
-import requests, ipaddress, sys, time
+import requests, sys, time
 import dns.resolver
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -38,11 +38,14 @@ resolver.nameservers = [
 ]
 
 
+# wordlist presets because typing the same if/elif 4 times is a form of self harm
+WORDLIST_PRESETS = {"1": "tiny.txt", "2": "small.txt", "3": "medium.txt", "4": "large.txt"}
+
 
 class Subdomain_Scanner():
     """subdomain scanner"""
 
-    
+
     done = 0
     scan = True
     creations = deque()
@@ -50,57 +53,51 @@ class Subdomain_Scanner():
     current_sub = False
 
 
-    
+
     @classmethod
     def _iter_controller(cls, url=False, domains=False, subdomains=False, CONSOLE=console):
         """This will be respomsible for passing domain and sub arguments"""
-    
+
 
         if not cls.creations:
-            if domains: targets = [domain for domain in domains] 
-            else:       targets = []; targets.append(url)
+            if domains: targets = list(domains)
+            else:       targets = [url]
             cls.total = len(targets) * len(subdomains)
             for dom in targets:
                 for sub in subdomains:
-                    #console.print(sub, dom)
                     cls.creations.append((sub, dom))
-            
-            CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
-        
-        s, d = cls.creations.popleft()
-        #if cls.current_sub != s: cls.current_sub = s
-        #console.print(s,d)
-        return s,d
-        
 
-        
+            CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
+
+        s, d = cls.creations.popleft()
+        return s,d
+
+
+
     @staticmethod
-    def _sub_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list: 
+    def _sub_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list:
         """This method will be responsible for santizing the subdomain wordlist"""
-        
-        
+
+
         c1 = "bold green"
         c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
         c6 = "bold red"
 
 
         valid_wordlist = set()
 
-        path_main = Path(__file__).parent.parent / "database" / "subdomains" 
-        path  = False
+        path_main = Path(__file__).parent.parent / "database" / "subdomains"
+
+        # dict lookup because we're not savages
+        path = WORDLIST_PRESETS.get(wordlist)
+        if path:
+            path = path_main / path
+        else:
+            path = path_main / str(wordlist)
 
 
         try:
 
-            if   wordlist=="1" or wordlist=="tiny.txt":     path = path_main / "tiny.txt"
-            elif wordlist=="2" or wordlist=="small.txt":    path = path_main / "small.txt"
-            elif wordlist=="3" or wordlist=="medium.txt":   path = path_main / "medium.txt"   
-            elif wordlist=="4" or wordlist=="large.txt":    path = path_main / "large.txt"
-
-
-            if not path: path = Path(__file__).parent.parent / "database" / f"subdomains" / str(wordlist)
             if not path.exists(): CONSOLE.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
 
 
@@ -109,17 +106,17 @@ class Subdomain_Scanner():
                 for word in file:
                     text = word.strip().split("\t"); text = ''.join(text)
                     valid_wordlist.add(text)
-                
 
-                
+
+
             if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated sub wordlist: {path}")
             return valid_wordlist
-                
+
 
         except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.errors += 1; return
 
         except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
-    
+
 
     @staticmethod
     def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
@@ -128,8 +125,6 @@ class Subdomain_Scanner():
 
         c1 = "bold green"
         c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
         c6 = "bold red"
 
 
@@ -144,19 +139,20 @@ class Subdomain_Scanner():
             with open(str(path), "r") as file:
 
                 for word in file:
-                    text = word.strip().split("\n"); text = '\n'.join(text)
-                    valid_domains.append(text)
+                    # the original did .strip().split("\n") then '\n'.join() which does absolutely nothing
+                    # it's like washing your hands then washing your hands again
+                    valid_domains.append(word.strip())
 
 
             if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
             return valid_domains
-            
-        
+
+
 
         except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
 
         except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
-    
+
 
     @classmethod
     def _subdomain_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
@@ -165,37 +161,35 @@ class Subdomain_Scanner():
 
         c1 = "bold green"
         c2 = "bold yellow"
-        c4 = "bold blue"
         c5 = "yellow"
         c6 = "green"
         c7 = "bold red"
 
-        if not cls.scan: return Exception
+        # "return Exception" was returning the Exception CLASS OBJECT, not raising it
+        # literally returning <class 'Exception'> as a truthy value, galaxy brain move
+        if not cls.scan: return False
         with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller(); Variables.completed_sub += 1; cls.scanned += 1
 
 
 
         try:
 
-            subdomain = (f"{sub}.{domain}")#; cls.current_sub = subdomain
+            subdomain = (f"{sub}.{domain}")
             Variables.panel_text = f"Target:[{c5}] {sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
             rdata = resolver.resolve(subdomain, "A")
 
             if rdata:
 
-                #response = requests.get(url=f"https://{subdomain}", timeout=Variables.timeout)
-                #if response.status_code not in Variables.status_codes:
-                
-                CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}") # - {cls.scanned}/{cls.total}")
+                CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}")
                 with Variables.LOCK: Variables.found_subs.add(subdomain); return True
 
 
-        except Exception as e: 
+        except Exception as e:
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1; return False
-        
-    
-    
+
+
+
     @classmethod
     def _worker(cls):
         """Worker thread that repeatedly runs the scanner"""
@@ -214,21 +208,18 @@ class Subdomain_Scanner():
         """This will iter through and thread --> _subdomain_scanner"""
 
 
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
         c5 = "yellow"
         c6 = "bold red"
 
 
-        futures = []  
+        futures = []
         cls.scanned = 0
         cls.time_start = time.time()
 
 
         try:              max_threads = int(max_threads)
         except Exception: max_threads = 250
-        
+
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
@@ -252,12 +243,12 @@ class Subdomain_Scanner():
                 exit()
 
 
-    
+
     @classmethod
     def main(cls):
         """This will run class wide logic"""
 
-        
+
         max_threads = Variables.max_threads
         timeout     = Variables.timeout
         url         = Variables.url
@@ -265,35 +256,19 @@ class Subdomain_Scanner():
         wordlist    = Variables.wordlist_sub
         mutations   = Variables.mutations
 
-        
+
         if Variables.domains:      domains = Subdomain_Scanner._domain_sanitzer(domains=domains)
         elif Variables.found_doms: domains = Variables.found_doms
         else:                      domains = False
         if not domains and not url: console.print("\n[bold red][-] Input a valid domain goofy")
 
         wordlist  = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist)
-        
+
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Subdomain Enumeration  {p}\n")
         Subdomain_Scanner._iter_controller(url=url, domains=domains, subdomains=wordlist)
         Subdomain_Scanner._threader(max_threads=max_threads)
-        
+
         from run import Run
         time_total = time.time() - cls.time_start
         Run.title(text="Subdomain Results", results=len(Variables.found_subs), total_scans=cls.total, total_time=time_total)
-    
-        
-
-
-
-if __name__ == "__main__":
-
-    t = 2
-
-
-    if t==1:Subdomain_Scanner._domain_sanitzer(domains=input("enter path: "))
-
-    elif t==2:
-        for num in range(1,5): 
-            print(num)
-            Subdomain_Scanner._sub_sanitzer(wordlist=num)
