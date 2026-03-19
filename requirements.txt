@@ -1,10 +1,5 @@
 rich
-ipaddress
 requests
 pyfiglet
-pathlib
 dnspython
-
-aiodns
-aiohttp
 pyOpenSSL
