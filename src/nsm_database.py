@@ -1,22 +1,17 @@
 # THIS WILL HOUSE AND CONTROL MAIN DATAPOINTS FROM FILES
 
 # UI IMPORTS
-from rich.panel import Panel
-from rich.table import Table
-from rich.live import Live
-from rich.console import Console
 
 
 # NSM IMPORTS
 from nsm_vars import Variables
 
 
-
 # ETC IMPORTS
 from pathlib import Path
 from datetime import datetime
-import sys, json
-
+import sys
+import json
 
 
 # CONSTANTS
@@ -45,112 +40,104 @@ large:  https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discove
 """
 
 
-
-
-class File_Saver():
+class File_Saver:
     """This class will save files"""
 
-
-    path         = False
+    path = False
     path_reverse = False
-    path_dir     = Path(__file__).parent.parent / "database" / "saved_scans"
-
-
+    path_dir = Path(__file__).parent.parent / "database" / "saved_scans"
 
     @classmethod
     def push_scan_results(cls, data, f_type="txt", reverse=False, verbose=False):
         """This will push current set of ips"""
 
-
         try:
-
             if cls.path_dir.exists():
-
-
-                if reverse: pathway = cls.path_reverse
-                else: pathway = cls.path
-
+                if reverse:
+                    pathway = cls.path_reverse
+                else:
+                    pathway = cls.path
 
                 if f_type == "txt":
                     with open(f"{pathway}.txt", "w") as file:
-
-                        ahh = '\n'.join(d for d in data)
+                        ahh = "\n".join(d for d in data)
                         file.write(ahh)
 
                 elif f_type == "json":
                     with open(f"{pathway}.json", "w") as file:
                         json.dump(data, file, indent=4)
 
-                console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
+                console.print(
+                    f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}"
+                )
 
+            else:
+                console.print(
+                    "\n[bold red][-] Your missing the database/saved_scans directory, please check README.md for info you skidd!!!"
+                )
+                sys.exit()
 
-            else: console.print(f"\n[bold red][-] Your missing the database/saved_scans directory, please check README.md for info you skidd!!!"); sys.exit()
-
-
-        except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e}")
-
-
+        except Exception as e:
+            console.print(f"[bold red][-] Exception Error:[bold yellow] {e}")
 
     @classmethod
     def ips_sanitizer(cls, ips, verbose=True):
         """This will sanitize and validate ips list"""
 
-
         c1 = "bold green"
-        c2 = "bold yellow"
         c5 = "yellow"
         c6 = "bold red"
 
         valid_ips = set()
 
-
         try:
-
             path = Path() / str(ips)
-            if not path.exists(): console.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
+            if not path.exists():
+                console.print(
+                    f"[{c6}][-] Invalid wordlist given, please check README.md for help!"
+                )
+                sys.exit()
             console.print(path)
             with open(path, "r") as file:
-
                 for word in file:
-                    ip = word.strip().split('\t'); ip = ''.join(ip)
+                    ip = word.strip().split("\t")
+                    ip = "".join(ip)
                     console.print(ip)
-                    Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Length:[{c5}] {len(word)}[/{c5}]")
+                    Variables.panel_text = f"Target:[{c5}] {ip}[/{c5}]  -  Length:[{c5}] {len(word)}[/{c5}]"
                     valid_ips.add(ip)
 
-            if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
+            if verbose:
+                console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
             return valid_ips
 
-        except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
-
+        except Exception as e:
+            console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}")
+            sys.exit()
 
     @classmethod
     def make_path(cls):
         """This will be called upon at the beginning of the program to then make the path stamp"""
 
-
         if not cls.path:
-
-
             timestamp = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
-
-
             if Variables.save_name:
-
-                cls.path         = cls.path_dir / f"{Variables.save_name}"
+                cls.path = cls.path_dir / f"{Variables.save_name}"
                 cls.path_reverse = cls.path_dir / f"{Variables.save_name}"
 
             elif Variables.url:
-
-                cls.path = cls.path_dir / f"{Variables.url.replace('.', '_')}_{timestamp}"
+                cls.path = (
+                    cls.path_dir / f"{Variables.url.replace('.', '_')}_{timestamp}"
+                )
                 cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}"
 
             else:
                 cls.path = cls.path_dir / f"{timestamp}.txt"
                 cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}"
 
-            console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path}")
-
+            console.print(
+                f"[bold green][*] File Path successfully made:[/bold green] {cls.path}"
+            )
 
 
 """
@@ -164,7 +151,6 @@ Stream 1: 580 LOC
 
 Well see how long this last as i am one tired ass nigga frl // LOL
 """
-
 
 
 # FOUND SOME LIBARIES TO TRY OUT
