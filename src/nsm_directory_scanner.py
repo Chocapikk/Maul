@@ -2,7 +2,7 @@
 
 
 
-# UI IMPORTS 
+# UI IMPORTS
 from rich.panel import Panel
 
 
@@ -22,42 +22,41 @@ from nsm_vars import Variables
 # CONSTANTS
 console = Variables.console
 
+# wordlist presets (yes this dict exists in 3 files, deal with it)
+WORDLIST_PRESETS = {"1": "tiny.txt", "2": "small.txt", "3": "medium.txt", "4": "large.txt"}
 
 
 
 class Directory_Scanner():
-    """subdomain scanner"""
+    """directory scanner (the docstring used to say "subdomain scanner" lmao, copy paste strikes again)"""
 
-    
+
     done  = 0
     total = 0
     scanned = 0
     scan = True
     current_dir = False
     creations = deque()
-   
+
 
     @classmethod
     def _iter_controller(cls, url=False, domains=False, directores=False, CONSOLE=console):
-        """This will be respomsible for passing domain and sub arguments"""
-    
+        """This will be respomsible for passing domain and dir arguments"""
+
 
         if not cls.creations:
-            if domains: targets = [domain for domain in domains] 
-            else:       targets = []; targets.append(url)
+            if domains: targets = list(domains)
+            else:       targets = [url]
             cls.total = len(targets) * len(directores)
             for dom in targets:
                 for sub in directores:
-                    #console.print(sub, dom)
                     cls.creations.append((dom, sub))
-            
+
             CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
-        
+
         s, d = cls.creations.popleft()
-        #if cls.current_dir != s: cls.current_dir = s
-        #console.print(s,d)
         return s,d
-    
+
 
     @staticmethod
     def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
@@ -66,8 +65,6 @@ class Directory_Scanner():
 
         c1 = "bold green"
         c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
         c6 = "bold red"
 
 
@@ -82,47 +79,44 @@ class Directory_Scanner():
             with open(str(path), "r") as file:
 
                 for word in file:
-                    text = word.strip().split("\n"); text = '\n'.join(text)
-                    valid_domains.append(text)
+                    # .strip() is all you need, the old split("\n")/join("\n") was a round trip to nowhere
+                    valid_domains.append(word.strip())
 
 
             if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
             return valid_domains
-            
-        
+
+
 
         except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
 
         except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
-    
+
 
     @staticmethod
     def _dir_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list:
-        """This method will be responsible for santizing the subdomain wordlist"""
-        
-        
+        """This method will be responsible for santizing the directory wordlist"""
+
+
         c1 = "bold green"
         c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
         c6 = "bold red"
 
 
         valid_wordlist = set()
 
-        path_main = Path(__file__).parent.parent / "database" / "directories" 
-        path  = False
+        path_main = Path(__file__).parent.parent / "database" / "directories"
+
+        # dict lookup, say goodbye to the if/elif tower of babel
+        path = WORDLIST_PRESETS.get(wordlist)
+        if path:
+            path = path_main / path
+        else:
+            path = path_main / str(wordlist)
 
 
         try:
 
-            if   wordlist=="1" or wordlist=="tiny.txt":     path = path_main / "tiny.txt"
-            elif wordlist=="2" or wordlist=="small.txt":    path = path_main / "small.txt"
-            elif wordlist=="3" or wordlist=="medium.txt":   path = path_main / "medium.txt"   
-            elif wordlist=="4" or wordlist=="large.txt":    path = path_main / "large.txt"
-
-
-            if not path: path = Path(__file__).parent.parent / "database" / f"directories" / str(wordlist)
             if not path.exists(): CONSOLE.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
 
 
@@ -133,35 +127,34 @@ class Directory_Scanner():
                     valid_wordlist.add(text)
 
 
-                
+
             if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated dir wordlist: {path}")
             return valid_wordlist
-                
+
 
         except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.errors += 1; return
 
         except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
-    
+
 
     @classmethod
     def _directory_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
-        """Subdomain scan happens here"""
+        """Directory scan happens here (not subdomain scan, despite what the old docstring claimed)"""
 
 
         c1 = "bold green"
         c2 = "bold yellow"
-        c4 = "bold blue"
         c5 = "yellow"
         c6 = "green"
         c7 = "bold red"
 
-        if not cls.scan: return Exception
-        with Variables.LOCK: subdomain, dir = Directory_Scanner._iter_controller(); Variables.completed_dir += 1; cls.scanned += 1
+        if not cls.scan: return False
+        with Variables.LOCK: subdomain, directory = Directory_Scanner._iter_controller(); Variables.completed_dir += 1; cls.scanned += 1
 
 
-        try: 
-            
-            domain = f"{subdomain}/{dir}"
+        try:
+
+            domain = f"{subdomain}/{directory}"
             url = f"http://{domain}"
             Variables.panel_text = f"Target:[{c5}] {subdomain}/*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
@@ -169,10 +162,10 @@ class Directory_Scanner():
             response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False, verify=False)
             code     = response.status_code
             headers  = response.headers
-           
+
 
             if code in Variables.status_codes:
-                
+
                 with Variables.LOCK:
 
                     if code in [200,204]:cc = c6
@@ -187,16 +180,16 @@ class Directory_Scanner():
         except requests.exceptions.SSLError as e:
             if verbose: CONSOLE.print(f"[{c7}][-] SSL Error:[{c2}] {e}")
             Variables.errors += 1
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectTimeout) as e: 
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectTimeout) as e:
             if verbose: CONSOLE.print(f"[{c7}][-] Timeout Error:[{c2}] {e}")
             Variables.errors += 1
-        except requests.ConnectionError as e: 
+        except requests.ConnectionError as e:
             if verbose: CONSOLE.print(f"[{c7}][-] Connection Error:[{c2}] {e}")
             Variables.errors += 1
-        except Exception as e: 
+        except Exception as e:
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1
-    
+
 
 
     @classmethod
@@ -214,12 +207,9 @@ class Directory_Scanner():
 
     @classmethod
     def _threader(cls, max_threads, CONSOLE=console, verbose=True):
-        """This will iter through and thread --> _subdomain_scanner"""
+        """This will iter through and thread --> _directory_scanner"""
 
 
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
         c5 = "yellow"
         c6 = "bold red"
 
@@ -249,21 +239,21 @@ class Directory_Scanner():
             except Exception as e:
                 Variables.errors += 1
                 cls.scan = False
-    
-    
+
+
 
     @classmethod
     def main(cls):
         """This will run class wide logic"""
 
-        
-        subdomains  = Variables.domains 
+
+        subdomains  = Variables.domains
         max_threads = Variables.max_threads
         timeout     = Variables.timeout
         url         = Variables.url
         wordlist    = Variables.wordlist_dir
 
-        
+
 
         if   Variables.domains:     subdomains = Directory_Scanner._domain_sanitzer(domains=subdomains)
         elif Variables.found_subs:  subdomains = Variables.found_subs
@@ -281,6 +271,3 @@ class Directory_Scanner():
         from run import Run
         time_total = time.time() - cls.time_start
         Run.title(text="Directory Results", results=len(Variables.found_dirs), total_scans=cls.total, total_time=time_total)
-    
-    
-        
