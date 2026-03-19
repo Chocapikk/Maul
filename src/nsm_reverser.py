@@ -8,10 +8,8 @@
 import dns.resolver
 import socket
 import ssl
-import sys
 import time
 import re
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -48,37 +46,6 @@ class Reverse_IP_Domain:
     total = 0
 
     @classmethod
-    def _ips_sanitzer(cls, ips, verbose=True) -> set:
-        """This will sanitize and validate ips list"""
-
-        valid_ips = set()
-
-        try:
-            path = Path() / str(ips)
-            if not path.exists():
-                console.print(
-                    f"[{C6}][-] Invalid wordlist given, please check README.md for help!"
-                )
-                sys.exit()
-            console.print(path)
-            with open(path, "r") as file:
-                for word in file:
-                    ip = word.strip().split("\t")
-                    ip = "".join(ip)
-                    console.print(ip)
-                    Variables.panel_text = f"Target:[{C5}] {ip}[/{C5}]  -  Max_Workers:[{C5}] {Variables.max_threads}[/{C5}]  -  Errors:[{C5}] {Variables.errors}[/{C5}]"
-                    valid_ips.add(ip)
-
-            cls.total = len(valid_ips)
-            if verbose:
-                console.print(f"\n\n[{C1}][+] Successfully sanitized list <-- ips.txt ")
-            return valid_ips
-
-        except Exception as e:
-            console.print(f"[{C6}][-] Exception Error:[/{C6}] {e}")
-            sys.exit()
-
-    @classmethod
     def _pull_domains_socket(cls, ip, verbose=False):
         """This will pull domains using the socket library"""
 
@@ -102,18 +69,18 @@ class Reverse_IP_Domain:
         """This will pull domains using the ssl library"""
 
         try:
-            # use with so we don't leak file descriptors when exceptions happen
-            # (the old code would leak sockets on timeout/refused/any error, fun times)
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            sock.connect((ip, 443))
+            # both raw socket AND ssl wrapper need context managers
+            # otherwise connect() failures leak the raw socket fd
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(5)
+                sock.connect((ip, 443))
 
-            context = ssl.create_default_context()
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
+                context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
 
-            with context.wrap_socket(sock, server_hostname=ip) as ssl_sock:
-                cert_bin = ssl_sock.getpeercert(binary_form=True)
+                with context.wrap_socket(sock, server_hostname=ip) as ssl_sock:
+                    cert_bin = ssl_sock.getpeercert(binary_form=True)
 
             import OpenSSL.crypto
 

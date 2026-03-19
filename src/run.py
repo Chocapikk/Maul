@@ -89,8 +89,12 @@ class Run:
             if Variables.scan_dir:
                 Directory_Scanner.main()
 
+            # save results - each type gets its own file so they don't overwrite each other
+            # (the old code wrote both subs and dirs to the same path, RIP subdomain results)
             if Variables.save:
                 if Variables.found_subs:
                     File_Saver.push_scan_results(data=Variables.found_subs)
                 if Variables.found_dirs:
-                    File_Saver.push_scan_results(data=Variables.found_dirs)
+                    File_Saver.push_scan_results(
+                        data=Variables.found_dirs, reverse=True
+                    )

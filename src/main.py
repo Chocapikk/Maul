@@ -137,7 +137,7 @@ def main():
     Variables.wordlist_sub = args.sub_wordlist or "2"
     Variables.wordlist_dir = args.dir_wordlist or "2"
 
-    Variables.timeout = args.timeout or 5
+    Variables.timeout = int(args.timeout) if args.timeout else 5
     Variables.save = args.save
     Variables.save_name = args.x
 

@@ -270,6 +270,7 @@ class Directory_Scanner:
             subdomains = False
         if not subdomains and not url:
             console.print("\n[bold red][-] Input a valid domain goofy")
+            return
 
         wordlist = Directory_Scanner._dir_sanitzer(wordlist=wordlist)
         p = "=" * 10

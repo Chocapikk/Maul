@@ -260,6 +260,7 @@ class Subdomain_Scanner:
             domains = False
         if not domains and not url:
             console.print("\n[bold red][-] Input a valid domain goofy")
+            return
 
         wordlist = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist)
 
