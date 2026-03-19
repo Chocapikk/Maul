@@ -37,9 +37,9 @@ class Run():
 
 
         if total_time:
-            hours = int(total_time // 3600) 
-            minutes = int((total_time % 3600) // 60)  
-            seconds = int(total_time % 60) 
+            hours = int(total_time // 3600)
+            minutes = int((total_time % 3600) // 60)
+            seconds = int(total_time % 60)
             total_time = (f"{hours}:{minutes}:{seconds}")
 
 
@@ -51,7 +51,7 @@ class Run():
             f"\n[{c2}]  [+] Elapsed Time:[{c4}] {total_time}"
         )
 
-        
+
         console.print(
             f"\n\n[{c1}]=========   {text}   =========\n",
             stats,
@@ -68,13 +68,14 @@ class Run():
         Variables.console.print(f"\n[yellow][*] Background Thread started")
 
         while True:
-            
+
             text = Variables.panel_text
             Variables.panel.renderable = text
 
-            time.sleep(0.0005)
+            # was 0.0005 (2000 updates/sec) which is completely unhinged, 50ms is fine
+            time.sleep(0.05)
 
-    
+
 
     @staticmethod
     def runner():
