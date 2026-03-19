@@ -47,11 +47,6 @@ large:  https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discove
 
 
 
-
-
-
-
-
 class File_Saver():
     """This class will save files"""
 
@@ -74,28 +69,28 @@ class File_Saver():
 
                 if reverse: pathway = cls.path_reverse
                 else: pathway = cls.path
-                
+
 
                 if f_type == "txt":
                     with open(f"{pathway}.txt", "w") as file:
-                        
+
                         ahh = '\n'.join(d for d in data)
                         file.write(ahh)
-                
+
                 elif f_type == "json":
                     with open(f"{pathway}.json", "w") as file:
                         json.dump(data, file, indent=4)
 
                 console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
-                 
+
 
             else: console.print(f"\n[bold red][-] Your missing the database/saved_scans directory, please check README.md for info you skidd!!!"); sys.exit()
 
 
         except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e}")
-        
-    
-    
+
+
+
     @classmethod
     def ips_sanitizer(cls, ips, verbose=True):
         """This will sanitize and validate ips list"""
@@ -103,13 +98,12 @@ class File_Saver():
 
         c1 = "bold green"
         c2 = "bold yellow"
-        c4 = "bold blue"
         c5 = "yellow"
         c6 = "bold red"
 
         valid_ips = set()
 
-        
+
         try:
 
             path = Path() / str(ips)
@@ -125,16 +119,16 @@ class File_Saver():
 
             if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
             return valid_ips
- 
+
         except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
-        
+
 
     @classmethod
     def make_path(cls):
-        """This will be called upon at the beginning fo the program to then make the path stamp"""
+        """This will be called upon at the beginning of the program to then make the path stamp"""
 
-        
-        if not cls.path:  
+
+        if not cls.path:
 
 
             timestamp = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
@@ -143,26 +137,19 @@ class File_Saver():
 
             if Variables.save_name:
 
-                cls.path         = cls.path_dir / f"{Variables.save_name}" 
-                cls.path_reverse = cls.path_dir / f"{Variables.save_name}" 
+                cls.path         = cls.path_dir / f"{Variables.save_name}"
+                cls.path_reverse = cls.path_dir / f"{Variables.save_name}"
 
-            elif Variables.url:  
+            elif Variables.url:
 
-                cls.path = cls.path_dir / f"{Variables.url.replace(".", "_")}_{timestamp}" 
-                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}" 
+                cls.path = cls.path_dir / f"{Variables.url.replace('.', '_')}_{timestamp}"
+                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}"
 
-            else:              
+            else:
                 cls.path = cls.path_dir / f"{timestamp}.txt"
                 cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}"
 
             console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path}")
-
-
-
-
-
-
-
 
 
 
@@ -171,7 +158,6 @@ Amount of code written per stream
 
 
 Stream 1: 580 LOC
-
 
 
 
@@ -197,7 +183,7 @@ Why the current implementation doesn't work:
 
 2. When connecting to IPs (not domains), SSL hostname verification MUST be disabled
    - SSL certs are issued for DOMAINS not IPs
-   - Default context tries to verify hostname → fails on IP connections
+   - Default context tries to verify hostname -> fails on IP connections
    - Fix: context.check_hostname = False + context.verify_mode = ssl.CERT_NONE
 
 3. Only grabbing Common Name (CN) misses most domains
