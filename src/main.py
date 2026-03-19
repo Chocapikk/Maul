@@ -4,7 +4,6 @@
 
 # UI IMPORTS
 from rich.console import Console
-from rich.panel import Panel
 import pyfiglet
 
 
@@ -32,25 +31,25 @@ AMERICA ALWAYS
 
 """
 # PRO USA
-# PRO WESTERN 
+# PRO WESTERN
+
+
+# wordlist presets because if/elif chains are a war crime
+WORDLIST_PRESETS = {"1": "tiny.txt", "2": "small.txt", "3": "medium.txt", "4": "large.txt"}
 
 
 
-
-class Main():
-    """This will launch program wide logic""" 
-
+def main():
+    """This will launch program wide logic, now as a function because classes with no instances are just namespaces with extra steps"""
 
 
     # COLORS
-
     c1 = "bold green"
     c2 = "bold yellow"
     c4 = "bold blue"
     c5 = "yellow"
     c6 = "green"
     c7 = "bold red"
-
 
 
 
@@ -90,42 +89,31 @@ class Main():
     args = parser.parse_args()
 
 
-    Variables.ips          = args.i            or False
-    Variables.url          = args.u            or False
-    Variables.domains      = args.d            or False
-    Variables.max_threads  = args.t            or 250
+    Variables.ips          = args.i
+    Variables.url          = args.u
+    Variables.domains      = args.d
+    Variables.max_threads  = args.t or 250
 
-    Variables.scan_rdns    = args.rdns         or False
-    Variables.scan_ports   = args.ports        or False
-    Variables.scan_sub     = args.subs         or False
-    Variables.scan_dir     = args.dirs         or False
+    Variables.scan_rdns    = args.rdns
+    Variables.scan_ports   = args.ports
+    Variables.scan_sub     = args.subs
+    Variables.scan_dir     = args.dirs
 
     if args.all:
         Variables.scan_rdns = Variables.scan_ports = Variables.scan_sub = Variables.scan_dir = True
 
-    Variables.status_codes = args.status_codes or False
+    Variables.status_codes = args.status_codes
     Variables.wordlist_sub = args.sub_wordlist or "2"
     Variables.wordlist_dir = args.dir_wordlist or "2"
 
-    Variables.timeout      = args.timeout      or 5
-    Variables.save         = args.save         or False
-    Variables.save_name    = args.x            or False
-    
+    Variables.timeout      = args.timeout or 5
+    Variables.save         = args.save
+    Variables.save_name    = args.x
 
 
-    if Variables.wordlist_sub=="1":   Variables.s_name="tiny.txt"
-    elif Variables.wordlist_sub=="2": Variables.s_name="small.txt"
-    elif Variables.wordlist_sub=="3": Variables.s_name="medium.txt"
-    elif Variables.wordlist_sub=="4": Variables.s_name="large.txt"
-    else: Variables.s_name=False
-
-    if Variables.wordlist_dir=="1":   Variables.d_name="tiny.txt"
-    elif Variables.wordlist_dir=="2": Variables.d_name="small.txt"
-    elif Variables.wordlist_dir=="3": Variables.d_name="medium.txt"
-    elif Variables.wordlist_dir=="4": Variables.d_name="large.txt"
-    else: Variables.d_name=False
-
-
+    # dict lookup instead of 8 lines of if/elif (you're welcome)
+    Variables.s_name = WORDLIST_PRESETS.get(Variables.wordlist_sub)
+    Variables.d_name = WORDLIST_PRESETS.get(Variables.wordlist_dir)
 
 
     try: Variables.max_threads = int(Variables.max_threads)
@@ -133,13 +121,11 @@ class Main():
 
 
     if args.status_codes:
-        codes = []
-        for c in args.status_codes.split(','): codes.append(int(c))
-        Variables.status_codes = codes  
+        Variables.status_codes = [int(c) for c in args.status_codes.split(',')]
     else: Variables.status_codes = [200,204,301,302,303,304]
 
 
-     
+
     stats = (
         f"[{c1}][+] Url:[{c4}] {Variables.url}"
         f"\n[{c1}] [+] Domains:[{c4}] {Variables.domains}"
@@ -153,13 +139,6 @@ class Main():
 
     )
 
-    panel  = Panel(renderable= stats,        
-        title="Constants",
-        border_style="purple",
-        style="bold red",
-        expand=False 
-    )
-    
     console.print(
         f"\n[{c1}]=========   CONSTANTS   =========\n",
         stats,
@@ -167,5 +146,9 @@ class Main():
     )
 
     #time.sleep(5); print("")
-    
+
     Run.runner()
+
+
+if __name__ == "__main__":
+    main()
