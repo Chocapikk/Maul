@@ -77,13 +77,13 @@ class File_Saver():
                 
 
                 if f_type == "txt":
-                    with open(f"{pathway}.txt", "w") as file:
+                    with open(f"{pathway}", "w") as file:
                         
                         ahh = '\n'.join(d for d in data)
                         file.write(ahh)
                 
                 elif f_type == "json":
-                    with open(f"{pathway}.json", "w") as file:
+                    with open(f"{pathway}", "w") as file:
                         json.dump(data, file, indent=4)
 
                 console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
